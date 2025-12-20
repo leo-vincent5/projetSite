@@ -9,6 +9,7 @@ class AudioPlayerController extends Controller
         // Tu peux aussi récupérer ça depuis la BDD
         $tracks = [
              [
+                'book_id' => 'hp1',
                 'title'  => 'Harry Potter 1',
                 'url'    => asset('audio/1partie1.m4a'),
                 'artist' => 'Leodible',      // optionnel
@@ -16,6 +17,7 @@ class AudioPlayerController extends Controller
                 'cover' => 'https://equicode.fr/img/covers/harry0.png',
             ],
              [
+                'book_id' => 'hp2',
                 'title'  => 'Harry Potter 2',
                 'url'    => asset('audio/2partie1.m4a'),
                 'artist' => 'Leodible',      // optionnel
@@ -23,6 +25,7 @@ class AudioPlayerController extends Controller
                 'cover' => 'https://equicode.fr/img/covers/harry2.png',
             ],
              [
+                'book_id' => 'hp3',
                 'title'  => 'Harry Potter 3',
                 'url'    => asset('audio/3partie1.m4a'),
                 'artist' => 'Leodible',      // optionnel
@@ -30,6 +33,7 @@ class AudioPlayerController extends Controller
                 'cover' => 'https://equicode.fr/img/covers/harry3.png',
             ],
              [
+                'book_id' => 'hp4a',
                 'title'  => 'Harry Potter 4 part 1',
                 'url'    => asset('audio/4partie1.m4a'),
                 'artist' => 'Leodible',      // optionnel
@@ -37,6 +41,7 @@ class AudioPlayerController extends Controller
                 'cover' => 'https://equicode.fr/img/covers/harry4.png',
             ],
             [
+                'book_id' => 'hp4b',
                 'title'  => 'Harry Potter 4 part 2',
                 'url'    => asset('audio/4partie2.m4a'),
                 'artist' => 'Leodible',      // optionnel
@@ -44,6 +49,7 @@ class AudioPlayerController extends Controller
                 'cover' => 'https://equicode.fr/img/covers/harry4.png',
             ],
             [
+                'book_id' => 'hp5a',
                 'title'  => 'Harry Potter 5 part 1',
                 'url'    => asset('audio/5partie1.m4a'),
                 'artist' => 'Leodible',      // optionnel
@@ -51,6 +57,7 @@ class AudioPlayerController extends Controller
                 'cover' => asset('img/covers/harry5.png'),
             ],
             [
+                'book_id' => 'hp5b',
                 'title'  => 'Harry Potter 5 part 2',
                 'url'    => asset('audio/5partie2.m4a'),
                 'artist' => 'Leodible',
@@ -58,6 +65,7 @@ class AudioPlayerController extends Controller
                 'cover' => 'https://equicode.fr/img/covers/harry5.png',
             ],
              [
+                'book_id' => 'hp5c',
                 'title'  => 'Harry Potter 5 part 3',
                 'url'    => asset('audio/5partie3.m4a'),
                 'artist' => 'Leodible',
@@ -65,6 +73,7 @@ class AudioPlayerController extends Controller
                 'cover' => asset('img/covers/harry.png'),
             ],
              [
+                'book_id' => 'hp6a',
                 'title'  => 'Harry Potter 6 part 1',
                 'url'    => asset('audio/6partie1.m4a'),
                 'artist' => 'Leodible',
@@ -72,6 +81,7 @@ class AudioPlayerController extends Controller
                 'cover' => 'https://equicode.fr/img/covers/harry6.png',
             ],
             [
+                'book_id' => 'hp6b',
                 'title'  => 'Harry Potter 6 part 2',
                 'url'    => asset('audio/6partie2.m4a'),
                 'artist' => 'Leodible',
@@ -79,6 +89,7 @@ class AudioPlayerController extends Controller
                 'cover' => 'https://equicode.fr/img/covers/harry6.png',
             ],
              [
+                'book_id' => 'hp7a',
                 'title'  => 'Harry Potter 7 part 1',
                 'url'    => asset('audio/7partie1.m4a'),
                 'artist' => 'Leodible',
@@ -86,6 +97,7 @@ class AudioPlayerController extends Controller
                 'cover' => asset('img/covers/harry7.png'),
             ],
              [
+                'book_id' => 'hp7b',
                 'title'  => 'Harry Potter 7 part 2',
                 'url'    => asset('audio/7partie2.m4a'),
                 'artist' => 'Leodible',
@@ -93,6 +105,7 @@ class AudioPlayerController extends Controller
                 'cover' => asset('img/covers/harry7.png'),
             ],
              [
+                'book_id' => 'hp7c',
                 'title'  => 'Harry Potter 7 part 3',
                 'url'    => asset('audio/7partie3.m4a'),
                 'artist' => 'Leodible',
@@ -102,29 +115,110 @@ class AudioPlayerController extends Controller
             // ...
         ];
 
-        $lastState = auth()->user()?->audio_resume;
-        return view('alohomora', compact('tracks', 'lastState'));
+  
+
+    $raw = auth()->user()?->audio_resume;
+
+    // si c'est l'ancien format (un seul objet avec book_id)
+    if (is_array($raw) && isset($raw['book_id'])) {
+        $lastState = [
+            $raw['book_id'] => $raw,
+        ];
+    } else {
+        // nouveau format (map) ou vide
+        $lastState = is_array($raw) ? $raw : [];
+    }
+
+      $totalSeconds = 0;
+    if (is_array($lastState)) {
+        foreach ($lastState as $state) {
+            $t = (float)($state['time'] ?? 0);
+            if ($t > 0) $totalSeconds += $t;
+        }
+    }
+
+    return view('alohomora', compact('tracks', 'lastState', 'totalSeconds'));
     }
 
 
-    public function saveResume(Request $request)
-    {
-        $user = $request->user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
+  public function saveResume(Request $request)
+{
+    $user = $request->user();
+    if (!$user) {
+        return response()->json(['message' => 'Unauthenticated'], 401);
+    }
 
+    $data = $request->validate([
+        'book_id' => 'required|string|max:100',
+        'url'     => 'required|string',
+        'title'   => 'nullable|string',
+        'artist'  => 'nullable|string',
+        'cover'   => 'nullable|string',
+        'time'    => 'required|numeric|min:0',
+    ]);
+
+    // ancien JSON (peut être null, ou un ancien "objet simple")
+    $existing = $user->audio_resume;
+
+    // Si c'est un ancien format (un seul objet avec 'url'), on le convertit en tableau indexé
+    if (is_array($existing) && isset($existing['url']) && !isset($existing[$data['book_id']])) {
+        $legacyBookId = $existing['book_id'] ?? $existing['url'];
+        $existing = [
+            $legacyBookId => $existing,
+        ];
+    }
+
+    if (!is_array($existing)) {
+        $existing = [];
+    }
+
+    // Upsert par book_id
+    $existing[$data['book_id']] = $data;
+
+    $user->audio_resume = $existing;
+    $user->save();
+
+    return response()->json([
+        'status' => 'ok',
+        'audio_resume' => $existing,
+    ]);
+}
+
+
+       public function show(Request $request)
+    {
         $data = $request->validate([
-            'url'    => 'required|string',
-            'title'  => 'nullable|string',
-            'artist' => 'nullable|string',
-            'cover'  => 'nullable|string',
-            'time'   => 'required|numeric|min:0',
+            'book' => 'required|string',
+            't'    => 'nullable|numeric|min:0',
+            'd'    => 'nullable|integer|min:5|max:300', // extrait 5s → 5 min
         ]);
 
-        $user->audio_resume = $data;
-        $user->save();
+        $bookId = $data['book'];
+        $start  = (float)($data['t'] ?? 0);
+        $dur    = (int)($data['d'] ?? 30);
 
-        return response()->json(['status' => 'ok']);
+        // ⚠️ Source de vérité : ton catalogue (plus tard -> BDD)
+        $tracks = [
+            [
+                'book_id' => 'hp1',
+                'title'  => 'Harry Potter 1',
+                'url'    => asset('audio/1partie1.m4a'),
+                'artist' => 'Leodible',
+                'cover'  => 'https://equicode.fr/img/covers/harry0.png',
+            ],
+            // ... copie les autres
+        ];
+
+        $track = collect($tracks)->firstWhere('book_id', $bookId);
+
+        abort_if(!$track, 404);
+
+        return view('audio_share', [
+            'track' => $track,
+            'start' => $start,
+            'end'   => $start + $dur,
+            'dur'   => $dur,
+        ]);
     }
+
 }

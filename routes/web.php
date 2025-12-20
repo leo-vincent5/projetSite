@@ -92,6 +92,9 @@ Route::get('/dashboard', function () {
 
 
 
+Route::get('/share/audio', [AudioPlayerController::class, 'show'])->name('audio.share.show');
+
+
 Route::middleware('auth')->group(function () {
 
 
