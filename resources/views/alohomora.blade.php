@@ -207,6 +207,16 @@
                             data-index="{{ $index }}"
                         >
                             <div class="relative aspect-square w-full">
+                                {{-- Badge + barre de progression --}}
+                                <div class="absolute top-2 left-2 flex items-center gap-2 pointer-events-none">
+                                    <span class="badge-status hidden px-2 py-1 rounded-lg text-xs font-medium border backdrop-blur
+                                                bg-slate-950/60 border-slate-200/10 text-slate-100">
+                                    </span>
+                                </div>
+
+                                <div class="absolute left-0 right-0 bottom-0 h-1.5 bg-black/30">
+                                    <div class="badge-progress h-full w-0 bg-indigo-500/90"></div>
+                                </div>
                                 <img
                                     src="{{ $track['cover'] ?? asset('images/default-cover.png') }}"
                                     alt="{{ $track['title'] ?? 'Audio' }}"
@@ -238,7 +248,8 @@
                                   data-artist="{{ $track['artist'] ?? 'Audio' }}"
                                   data-album="{{ $track['album'] ?? '' }}"
                                   data-cover="{{ $track['cover'] ?? asset('images/default-cover.png') }}"
-                                  data-book-id="{{ $track['book_id'] ?? $track['url'] }}">
+                                  data-book-id="{{ $track['book_id'] ?? $track['url'] }}"
+                                  data-duration="{{ $track['duration'] ?? '' }}">
                             </span>
                         </button>
                     @endforeach
@@ -268,15 +279,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const tracks = Array.from(buttons).map((btn, index) => {
         const meta = btn.querySelector('.track-meta');
         return {
+            btn: btn, // ✅ IMPORTANT pour les badges
             index,
-            bookId: meta.dataset.bookId,   // ✅ FIX
+            bookId: meta.dataset.bookId,
             url: meta.dataset.url,
             title: meta.dataset.title,
             artist: meta.dataset.artist,
             album: meta.dataset.album,
             cover: meta.dataset.cover,
+            duration: meta.dataset.duration ? parseFloat(meta.dataset.duration) : null,
         };
     });
+
 
     let currentIndex  = 0;
     let lastServerSaveTs = 0;
@@ -327,6 +341,64 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!track?.bookId) return null;
         return serverResumes[track.bookId] ?? null;
     }
+
+
+    function fmtShort(seconds) {
+        seconds = Math.max(0, Math.floor(seconds || 0));
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        if (h > 0) return `${h}h${String(m).padStart(2,'0')}`;
+        return `${m} min`;
+    }
+
+    function updateTrackBadges() {
+        tracks.forEach((t) => {
+            const resume = serverResumes?.[t.bookId] ?? null;
+
+            const badgeEl = t.btn.querySelector('.badge-status');
+            const barEl   = t.btn.querySelector('.badge-progress');
+
+            if (!badgeEl || !barEl) return;
+
+            // reset
+            badgeEl.classList.add('hidden');
+            badgeEl.textContent = '';
+            badgeEl.classList.remove(
+                'bg-emerald-500/15','border-emerald-400/30','text-emerald-200',
+                'bg-indigo-500/15','border-indigo-400/30','text-indigo-200'
+            );
+
+            barEl.style.width = '0%';
+            barEl.classList.remove('bg-emerald-500/90');
+            barEl.classList.add('bg-indigo-500/90');
+
+            if (!resume || !resume.time || resume.time < 5) return;
+
+            let pct = null;
+            if (t.duration && t.duration > 0) {
+                pct = Math.min((resume.time / t.duration) * 100, 100);
+                barEl.style.width = `${pct}%`;
+            } else {
+                // sans durée -> barre symbolique
+                barEl.style.width = '35%';
+            }
+
+            const isDone = (pct !== null) ? (pct >= 98) : false;
+
+            if (isDone) {
+                badgeEl.classList.remove('hidden');
+                badgeEl.textContent = 'Lu';
+                badgeEl.classList.add('bg-emerald-500/15','border-emerald-400/30','text-emerald-200');
+                barEl.classList.remove('bg-indigo-500/90');
+                barEl.classList.add('bg-emerald-500/90');
+            } else {
+                badgeEl.classList.remove('hidden');
+                badgeEl.textContent = `En cours · ${fmtShort(resume.time)}`;
+                badgeEl.classList.add('bg-indigo-500/15','border-indigo-400/30','text-indigo-200');
+            }
+        });
+    }
+
 
     function updateResumeButtonForCurrentTrack() {
         const track = tracks[currentIndex];
@@ -388,6 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ✅ Met à jour le cache côté client aussi
                 serverResumes[track.bookId] = payload;
                 updateResumeButtonForCurrentTrack();
+                updateTrackBadges();
 
                 if (manual) {
                     const oldText = saveNowBtn.textContent;
@@ -504,6 +577,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         updateResumeButtonForCurrentTrack();
     }
+
+    updateTrackBadges();
 
 
     // ====== SHARE MODAL ======
