@@ -43,4 +43,16 @@ class User extends Authenticatable
             'audio_resume' => 'array',
 
     ];
+
+    public function circles()
+    {
+        return $this->belongsToMany(
+            \App\Models\Circle::class,
+            'circle_members',
+            'user_id',
+            'circle_id'
+        )
+        ->withPivot('role')
+        ->withTimestamps();
+    }
 }

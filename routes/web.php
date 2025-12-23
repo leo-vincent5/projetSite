@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AudioPlayerController;
-
+use App\Http\Controllers\CircleController;
+use App\Http\Controllers\CommentController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -94,9 +95,19 @@ Route::get('/dashboard', function () {
 
 Route::get('/share/audio', [AudioPlayerController::class, 'show'])->name('audio.share.show');
 
+Route::get('/invite/{token}', [CircleController::class, 'invite'])->name('circles.invite');
 
 Route::middleware('auth')->group(function () {
 
+    Route::get('/comments/my', [CommentController::class, 'my'])->name('comments.my');
+    Route::delete('/circles/{circle}/members/{user}',[CircleController::class, 'removeMember'])->name('circles.members.remove');
+    Route::post('/circles', [CircleController::class, 'store'])->name('circles.store');
+    Route::post('/circles/{circle}/join', [CircleController::class, 'join'])->name('circles.join');
+    Route::get('/circles/{circle}', [CircleController::class, 'show'])->name('circles.show');
+    Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+
+    // récupère les commentaires visibles pour un circle+book, selon ton avancement
+    Route::get('/comments', [CommentController::class, 'index'])->name('comments.index');
 
     Route::get('/alohomora', [AudioPlayerController::class, 'index'])->name('audio.player');
 

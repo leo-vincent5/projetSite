@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
+
+
+
 class AudioPlayerController extends Controller
 {
     public function index()
@@ -115,7 +118,22 @@ class AudioPlayerController extends Controller
             // ...
         ];
 
-  
+       
+
+$bookIds = collect($tracks)
+        ->pluck('book_id')
+        ->filter()
+        ->unique()
+        ->values();
+
+    $circles = \App\Models\Circle::query()
+        ->whereHas('members', fn($q) => $q->where('user_id', auth()->id()))
+        ->with(['members:id,name']) // adapte si tu as prénom/username
+        ->withCount('members')
+        ->orderBy('name')
+        ->get();
+
+ $circleIds = $circles->pluck('id');
 
     $raw = auth()->user()?->audio_resume;
 
@@ -135,9 +153,38 @@ class AudioPlayerController extends Controller
             $t = (float)($state['time'] ?? 0);
             if ($t > 0) $totalSeconds += $t;
         }
+    }   
+    
+      $allComments = \App\Models\Comment::query()
+        ->whereIn('book_id', $bookIds)
+        ->whereIn('circle_id', $circleIds)
+        ->with('user:id,name')
+        ->orderBy('time_sec')
+        ->get();
+
+          $resumeTime = function(string $bookId) use ($lastState) {
+        $t = data_get($lastState, "$bookId.time", 0);
+        return is_numeric($t) ? (float)$t : 0;
+    };
+
+
+    $commentsByBookAndCircle = [];
+    $hiddenCountsByBookAndCircle = [];
+
+    foreach ($allComments as $c) {
+        $key = $c->book_id.'|'.$c->circle_id;
+
+        $userT = $resumeTime($c->book_id);
+
+        if ($c->time_sec <= $userT) {
+            $commentsByBookAndCircle[$key][] = $c;
+        } else {
+            $hiddenCountsByBookAndCircle[$key] = ($hiddenCountsByBookAndCircle[$key] ?? 0) + 1;
+        }
     }
 
-    return view('alohomora', compact('tracks', 'lastState', 'totalSeconds'));
+
+    return view('alohomora', compact('tracks', 'lastState', 'totalSeconds', 'circles','commentsByBookAndCircle','hiddenCountsByBookAndCircle'));
     }
 
 
