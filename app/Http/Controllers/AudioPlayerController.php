@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 
 
@@ -246,6 +247,8 @@ $bookIds = collect($tracks)
     }
 
 
+
+
   public function saveResume(Request $request)
 {
     $user = $request->user();
@@ -337,4 +340,144 @@ $bookIds = collect($tracks)
         ]);
     }
 
-}
+
+    public function aloserie()
+    {
+
+
+  
+
+
+    $featuredResponse = Http::get('https://api.purstream.art/api/v1/catalog/movies', [
+        'search' => '',
+        'page' => 1,
+        'sortBy' => 'newest',
+        'types' => 'tv',
+        'categoriesIds' => '*',
+        'franchisesIds' => '*',
+        'displayMode' => 'large',
+        'perPage' => 20,
+
+    ]);
+
+
+
+
+      $response = Http::get('https://api.purstream.art/api/v1/catalog/movies', [
+        'search' => '',
+        'page' => 1,
+        'sortBy' => 'best-rated',
+        'types' => 'tv',
+        'categoriesIds' => '*',
+        'franchisesIds' => '*',
+        'displayMode' => 'large',
+        'perPage' => 20,
+
+    ]);
+
+    $videos = $response->json();
+    $featuredJson = $featuredResponse->json();
+    $featured = $featuredJson['data']['items']['data'];
+    $datas = $videos['data']['items']['data'];
+
+    $hero = $featured[array_rand($featured)];
+   
+    return view('series', compact('videos', 'datas', 'featured', 'hero'));
+      
+    }
+
+
+    public function oneserie($id)
+    {
+    $saison = (int) request('saison', 1);
+    $lang = request('lang', 'fr');
+
+    $responseSaison = Http::get("https://api.purstream.art/api/v1/media/{$id}/season/{$saison}");
+
+
+    $response = Http::get("https://api.purstream.art/api/v1/media/{$id}/sheet");
+
+    $response = $response->json();
+    $responseSaison = $responseSaison->json();
+    $responseSaison = $responseSaison['data']['items']['episodes'];
+    $response = $response['data']['items'];
+
+    $parsed = collect($response['urls'])
+        ->map(function ($item) {
+            if (preg_match('/S(\d+)\/E(\d+)/', $item['url'], $m)) {
+                return [
+                    'season' => (int)$m[1],
+                    'episode' => (int)$m[2],
+                    'url' => $item['url'],
+                    'name' => $item['name'],
+                ];
+            }
+            return null;
+        })
+        ->filter()
+        ->sortBy([
+            ['season', 'asc'],
+            ['episode', 'asc'],
+        ])
+        ->values();
+
+    $result = [
+        'fr' => [],
+        'vo' => [],
+    ];
+
+    foreach ($parsed as $item) {
+        $name = strtoupper($item['name']);
+
+        $lang = str_contains($name, 'VF') || str_contains($name, 'FR')
+            ? 'fr'
+            : 'vo';
+
+        $season = $item['season'];
+        $episode = $item['episode'];
+
+        $result[$lang][$season][$episode] = $item;
+    }
+
+   
+    return view('oneserie', compact('responseSaison', 'response', 'result' ,'id', 'saison', 'lang'));
+    }
+
+
+
+    public function search(Request $request)
+    {
+        $query = $request->validate([
+            'q' => 'required|string|max:100',
+        ])['q'];
+        
+        try {
+            $response = Http::timeout(10)->get('https://api.purstream.art/api/v1/search-bar/search/' . urlencode($query) );
+        
+          
+ if ($response->failed()) {
+            return response()->json([
+                'results' => [],
+                'message' => 'Erreur API',
+            ], 500);
+        }
+
+          $payload = $response->json();
+
+        $results = collect($payload['data']['items']['movies']['items'] ?? [])
+            ->filter(fn($item) => ($item['type'] ?? null) === 'tv')
+            ->values()
+            ->toArray();
+
+        return response()->json([
+            'results' => $results,
+            'count' => $payload['data']['items']['movies']['count'] ?? count($results),
+        ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'results' => [],
+                'message' => 'Impossible de contacter l’API',
+            ], 500);
+        }
+    }
+    }

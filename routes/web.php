@@ -37,6 +37,8 @@ Route::get('/tickboss', function () {
 
 
 
+
+
 Route::get('/download/file1', function () {
     return response()->download('/tb/tickboss.apk');
 })->name('download.file1');
@@ -99,6 +101,9 @@ Route::get('/invite/{token}', [CircleController::class, 'invite'])->name('circle
 
 Route::middleware('auth')->group(function () {
 
+    Route::get('/searchSeries', [AudioPlayerController::class, 'search'])->name('series.search');
+    Route::get('/aloserie',[AudioPlayerController::class, 'aloserie'])->name('aloserie');
+    Route::get('/oneserie/{id}',[AudioPlayerController::class, 'oneserie'])->name('oneserie');
     Route::get('/comments/my', [CommentController::class, 'my'])->name('comments.my');
     Route::delete('/circles/{circle}/members/{user}',[CircleController::class, 'removeMember'])->name('circles.members.remove');
     Route::post('/circles', [CircleController::class, 'store'])->name('circles.store');
