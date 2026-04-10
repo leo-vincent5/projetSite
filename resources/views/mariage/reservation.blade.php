@@ -37,9 +37,9 @@
                         <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Forfait</label>
                         <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelectPref" name="forfait">
                             <option @if(isset($forfait)) selected @endif >Choisir...</option>
-                            <option @if($forfait === "bronze") selected @endif value="bronze">Forfait Bronze - L'Essentiel du Bonheur - À partir de 400 €</option>
-                            <option @if($forfait === "argent") selected @endif value="argent">Forfait Argent - Élégance Immortalisée - À partir de 800 €</option>
-                            <option @if($forfait === "or") selected @endif  value="or">Forfait Or - L'Harmonie Personnalisée - À partir de 2000 €</option>
+                            <option @if($forfait === "bronze") selected @endif value="bronze">Forfait Bronze - L'Essentiel du Bonheur </option>
+                            <option @if($forfait === "argent") selected @endif value="argent">Forfait Argent - Élégance Immortalisée</option>
+                            <option @if($forfait === "or") selected @endif  value="or">Forfait Or - L'Harmonie Personnalisée </option>
                         </select>
                     </div>
 

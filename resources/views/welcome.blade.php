@@ -411,21 +411,21 @@ min-height: 300px;">
             <div class="forfaits">
                 <div class="forfait">
                     <h2>Forfait Bronze - L'Essentiel du Bonheur</h2>
-                    <p class="prix"><i>À partir de 400 € ~ 50 photos</i></p>
+                    <p class="prix"><i>~ 50 photos</i></p>
                     <p>Capturez les moments magiques de votre journée spéciale avec notre Forfait Bronze. Idéal pour les mariages intimes, ce forfait offre une couverture professionnelle pendant la mairie et le vin d'honneur, capturant les moments les plus précieux. Vous recevrez une sélection soigneusement choisie de photos, reflétant l'essence de votre bonheur. Des souvenirs intemporels à un prix accessible, ce forfait vous offre une belle introduction à notre art de la photographie de mariage.</p>
                     <a href="{{route('forfaits')}}" class="btn btn-primary white-background btMariage">En savoir plus</a>
                 </div>
 
                 <div class="forfait">
                     <h2>Forfait Argent - Élégance Immortalisée</h2>
-                    <p class="prix"><i>À partir de 800 € ~ 150 photos</i></p>
+                    <p class="prix"><i>~ 150 photos</i></p>
                     <p>Notre Forfait Argent vous offre une expérience photographique enrichie, capturant chaque instant avec une précision exceptionnelle. Profitez d'une couverture étendue de 6 heures, assortie de retouches de base pour sublimer vos souvenirs. En prime, recevez 5 tirages photo de haute qualité, créant une galerie physique de vos moments inoubliables. L'Élégance Immortalisée offre une fusion parfaite entre qualité et accessibilité.</p>
                     <a href="{{route('forfaits')}}" class="btn btn-primary white-background btMariage">En savoir plus</a>
                 </div>
 
                 <div class="forfait">
                     <h2>Forfait Or - L'Harmonie Personnalisée</h2>
-                    <p class="prix"><i>À partir de 2000 € ~ 400 photos</i></p>
+                    <p class="prix"><i>~ 400 photos</i></p>
                     <p>Le Forfait Or offre une expérience de photographie de mariage inégalée, créant une harmonie parfaite entre la capture artistique et la personnalisation exceptionnelle. Profitez d'une couverture étendue, avec des retouches avancées pour sublimer chaque image. En plus d'une collection complète de photos, recevez 20 tirages photo haut de gamme et un somptueux album personnalisé. Laissez-nous transformer votre journée en une œuvre d'art intemporelle avec L'Harmonie Personnalisée.</p>
                     <a href="{{route('forfaits')}}" class="btn btn-primary white-background btMariage">En savoir plus</a>
                 </div>
@@ -587,6 +587,28 @@ min-height: 300px;">
 
       </div>
 
+      
+<div 
+  id="iframeOverlay"
+  style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; align-items: center; justify-content: center;"
+  onclick="closeIframe(event)"
+>
+  <iframe 
+    src="https://exaltec.net/chatbot-user?c55e814b-9ee6-49d7-9b23-38e1d447f3c2"
+    style="width: 500px; height: 80vh; border: none; border-radius: 8px;"
+    onclick="event.stopPropagation()"
+  ></iframe>
+</div>
+
+<button 
+  id="chatBtn" class="" 
+  style="position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%;background: linear-gradient(to left, #761c4a, #600425); color: white; border: none; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 1000; font-size: 24px;"
+  onclick="toggleIframe()"
+>
+<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik04IDJhLjc1Ljc1IDAgMCAwLS43NS43NVY1SDUuNWEyLjk5IDIuOTkgMCAwIDAtMi45NTcgMi41SDIuNUMxLjY4IDcuNSAxIDguMTggMSA5djFjMCAuODIuNjggMS41IDEuNSAxLjVoLjA0M0EyLjk5IDIuOTkgMCAwIDAgNS41IDE0aDVhMi45OSAyLjk5IDAgMCAwIDIuOTU3LTIuNWguMDQzYy44MiAwIDEuNS0uNjggMS41LTEuNVY5YzAtLjgyLS42OC0xLjUtMS41LTEuNWgtLjA0M0EyLjk5IDIuOTkgMCAwIDAgMTAuNSA1SDguNzVWMi43NUEuNzUuNzUgMCAwIDAgOCAyTTYgNi43NWMuNjg2IDAgMS4yNS41NjQgMS4yNSAxLjI1UzYuNjg2IDkuMjUgNiA5LjI1UzQuNzUgOC42ODYgNC43NSA4UzUuMzE0IDYuNzUgNiA2Ljc1bTQgMGMuNjg2IDAgMS4yNS41NjQgMS4yNSAxLjI1UzEwLjY4NiA5LjI1IDEwIDkuMjVTOC43NSA4LjY4NiA4Ljc1IDhTOS4zMTQgNi43NSAxMCA2Ljc1bS00LjUgNGg1YS43NS43NSAwIDAgMSAuNzUuNzVhLjc1Ljc1IDAgMCAxLS43NS43NWgtNWEuNzUuNzUgMCAwIDEtLjc1LS43NWEuNzUuNzUgMCAwIDEgLjc1LS43NSIvPjwvc3ZnPg==" alt="bot Ia"
+style="width: 32px; height: 42px;     filter: invert(1);">
+</button>
+
     <footer  class="container py-5" style="margin-top: 7rem!important; max-width: 100vw;">
       <div class="row" style="text-align: center;align-items: center">
         <div id="essais" class="col-12 col-md">
@@ -634,6 +656,19 @@ min-height: 300px;">
     </body>
 
     <script type="text/javascript">
+
+
+        function toggleIframe() {
+        const overlay = document.getElementById('iframeOverlay');
+        overlay.style.display = overlay.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function closeIframe(event) {
+        if (event.target.id === 'iframeOverlay') {
+        document.getElementById('iframeOverlay').style.display = 'none';
+        }
+        }
+
 			window.onload = function(){
 				snow.init(10);
 			};

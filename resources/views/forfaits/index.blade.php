@@ -18,7 +18,7 @@
         <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg" style="padding: 20px; margin: 20px;">
             <div class="forfait" id="forfait1">
                 <h2>Forfait Bronze - L'Essentiel du Bonheur</h2>
-                <p class="prix">À partir de 400 €</p>
+                <p class="prix"></p>
                 <p>Capturez les moments essentiels de votre journée spéciale avec notre Forfait Bronze - L'Essentiel du Bonheur. Conçu pour ceux qui recherchent une couverture de base mais de qualité pour leur mariage, ce forfait vous offre une expérience de photographie simple mais mémorable.</p>
                 <h3>Caractéristiques du forfait :</h3>
                 <ul>
@@ -33,7 +33,7 @@
         <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg" style="padding: 20px; margin: 20px;">
             <div class="forfait" id="forfait2">
                 <h2>Forfait Argent - L'Élégance Captivante</h2>
-                <p class="prix">À partir de 800 €</p>
+                <p class="prix"></p>
                 <p>Offrez-vous une expérience de mariage élégante et captivante avec notre Forfait Argent - L'Élégance Captivante. Avec une couverture plus étendue et des services supplémentaires, ce forfait est parfait pour ceux qui recherchent un niveau de sophistication supplémentaire pour leur journée spéciale.</p>
                 <h3>Caractéristiques du forfait :</h3>
                 <ul>
@@ -49,7 +49,7 @@
         <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg" style="padding: 20px; margin: 20px;">
             <div class="forfait" id="forfait3">
                 <h2>Forfait Or - La Magie Intemporelle</h2>
-                <p class="prix">À partir de 2000 €</p>
+                <p class="prix"></p>
                 <p>Vivez la magie intemporelle de votre mariage avec notre Forfait Or - La Magie Intemporelle. Offrant une couverture complète et des services exclusifs, ce forfait vous assure des souvenirs inoubliables qui captureront chaque instant de votre journée spéciale dans toute sa splendeur.</p>
                 <h3>Caractéristiques du forfait :</h3>
                 <ul>

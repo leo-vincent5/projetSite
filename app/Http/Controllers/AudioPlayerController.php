@@ -115,6 +115,63 @@ class AudioPlayerController extends Controller
                 'album'  => 'Notes voix',
                 'cover' => asset('img/covers/harry7.png'),
             ],
+            [
+                'book_id' => 'dune1',
+                'title'  => 'Dune 1',
+                'url'    => asset('audio/dune1.m4a'),
+                'artist' => 'Leodible',
+                'album'  => 'Notes voix',
+                'cover' => asset('img/covers/dune1.png'),
+            ],
+            [
+                'book_id' => 'dune2',
+                'title'  => 'Dune 2',
+                'url'    => asset('audio/dune2.m4a'),
+                'artist' => 'Leodible',
+                'album'  => 'Notes voix',
+                'cover' => asset('img/covers/dune2.png'),
+            ],
+            [
+                'book_id' => 'animaux1',
+                'title'  => 'Les animaux fanstastique 1',
+                'url'    => asset('audio/animaux1.m4a'),
+                'artist' => 'Leodible',
+                'album'  => 'Notes voix',
+                'cover' => asset('img/covers/animaux.png'),
+            ],
+            [
+                'book_id' => 'seingeur1',
+                'title'  => 'Le seigneur des anneaux 1',
+                'url'    => asset('audio/Anneau1Part1.m4a'),
+                'artist' => 'Leodible',
+                'album'  => 'Notes voix',
+                'cover' => asset('img/covers/an1.png'),
+            ],
+            [
+                'book_id' => 'seigneur2',
+                'title'  => 'Le seigneur des anneaux 2',
+                'url'    => asset('audio/Anneau2Part1.m4a'),
+                'artist' => 'Leodible',
+                'album'  => 'Notes voix',
+                'cover' => asset('img/covers/an2.png'),
+            ],
+            [
+                'book_id' => 'mortsurlenil',
+                'title'  => 'AGATHA CHRISTIE - MORT SUR LE NIL',
+                'url'    => asset('audio/mortsurlenil.m4a'),
+                'artist' => 'Leodible',
+                'album'  => 'Notes voix',
+                'cover' => asset('img/covers/mortsurlenil.png'),
+            ],
+            [
+                'book_id' => 'orientexpress',
+                'title'  => 'Agatha Christie - Le Crime de l Orient Express',
+                'url'    => asset('audio/orientexpress.m4a'),
+                'artist' => 'Leodible',
+                'album'  => 'Notes voix',
+                'cover' => asset('img/covers/orientexpress.png'),
+            ],
+
             // ...
         ];
 
@@ -149,7 +206,8 @@ $bookIds = collect($tracks)
 
       $totalSeconds = 0;
     if (is_array($lastState)) {
-        foreach ($lastState as $state) {
+        foreach ($lastState as $key => $state) {
+            if ($key === '__last') continue;
             $t = (float)($state['time'] ?? 0);
             if ($t > 0) $totalSeconds += $t;
         }
@@ -220,7 +278,18 @@ $bookIds = collect($tracks)
     }
 
     // Upsert par book_id
-    $existing[$data['book_id']] = $data;
+    $ts = (int) round(microtime(true) * 1000);
+
+    $existing[$data['book_id']] = array_merge($data, [
+        'updated_at' => $ts,
+    ]);
+
+    // Meta "dernier lu" (cross-device)
+    $existing['__last'] = [
+        'book_id'    => $data['book_id'],
+        'time'       => (float) $data['time'],
+        'updated_at' => $ts,
+    ];
 
     $user->audio_resume = $existing;
     $user->save();

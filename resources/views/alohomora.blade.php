@@ -3,6 +3,31 @@
 @section('css')
     <style>
 
+      .navbar {
+            background-color: rgb(2 6 23 / var(--tw-bg-opacity, 1))!important;
+           
+      }
+
+       .navbar-brand{
+ color:white !important;
+       }
+
+      main{
+        background-color: rgb(2 6 23 / var(--tw-bg-opacity, 1))!important;
+      }
+
+
+      .navbar-light .navbar-toggler-icon {
+    filter: invert(1) !important;
+      }
+
+
+      .text-3xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    color: #ff8800 !important;
+}
+
 .share-duration-btn.active {
   background: linear-gradient(135deg,
     rgba(99,102,241,0.35),
@@ -123,7 +148,7 @@
         <div class="bg-slate-900/80 rounded-3xl border border-slate-700/70 shadow-xl p-5 sm:p-6 flex flex-col sm:flex-row gap-5">
             {{-- Cover grande --}}
             <div class="w-full sm:w-48 flex-shrink-0 flex justify-center sm:justify-start">
-                <div class="relative w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(15,23,42,0.9)] bg-slate-800">
+                <div class="relative md:w-40 md:h-40 w-60 h-60  sm:w-48 sm:h-48 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(15,23,42,0.9)] bg-slate-800">
                     <img
                         id="player-cover"
                         src="{{ $tracks[0]['cover'] ?? asset('images/default-cover.png') }}"
@@ -134,6 +159,7 @@
                 </div>
             </div>
 
+
             {{-- Infos + contrôles --}}
             <div class="flex-1 flex flex-col justify-between">
                 <div class="mb-3">
@@ -142,15 +168,15 @@
                         Sélectionne un audio pour commencer
                     </p>
                     <p id="current-artist" class="text-sm text-slate-400 mt-1">-</p>
-                </div>
+                </div>  
 
                 <div class="space-y-3">
-                   <div class="flex items-center gap-2">
+                   <div class="flex flex-wrap items-center w-full  gap-2">
                     {{-- Bouton partager (icone) --}}
                     <button
                         id="open-share-modal"
                         type="button"
-                        class="inline-flex items-center justify-center w-11 h-11 rounded-xl
+                        class="inline-flex items-center justify-center w-11 h-11 rounded-xl flex-1
                             border border-slate-700 bg-slate-900/70
                             hover:bg-slate-800/80 hover:border-slate-600
                             transition"
@@ -164,7 +190,7 @@
 
                     <button id="open-comments-modal"
                             type="button"
-                            class="inline-flex items-center justify-center w-11 h-11 rounded-xl
+                            class="inline-flex items-center justify-center w-11 h-11 rounded-xl flex-1
                                 border border-slate-700 bg-slate-900/70 hover:bg-slate-800/80 transition"
                             title="Commentaires">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-200" viewBox="0 0 24 24" fill="currentColor">
@@ -186,7 +212,7 @@
                     {{-- Reprendre (si visible) --}}
                     <button
                         id="resume-btn"
-                        class="hidden px-4 py-2 text-sm rounded-xl border border-slate-500 text-slate-100
+                        class="hidden w-full md:w-auto px-4 py-2 text-sm rounded-xl border border-slate-500 text-slate-100
                             hover:bg-slate-800/80 transition disabled:opacity-60 disabled:cursor-not-allowed"
                         type="button"
                     >
@@ -252,7 +278,7 @@
 </div>
 
         <div class="bg-slate-900/60 rounded-3xl border border-slate-700/70 p-5 sm:p-6">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between flex-wrap">
                 <h2 class="text-lg font-semibold">Commentaires</h2>
                 <div id="locked-comments" class="text-xs text-slate-400"></div>
             </div>
@@ -274,7 +300,7 @@
                     @foreach ($tracks as $index => $track)
                         <button
                             type="button"
-                            class="track-btn group relative flex flex-col rounded-2xl overflow-hidden bg-slate-900 shadow-lg border border-slate-800 hover:border-indigo-400/80 hover:shadow-[0_0_30px_rgba(129,140,248,0.3)] transition-all duration-300"
+                            class="track-btn group relative flex flex-col rounded-2xl overflow-hidden bg-slate-900 shadow-lg  border-slate-800 hover:border-indigo-400/80 hover:shadow-[0_0_30px_rgba(129,140,248,0.3)] transition-all duration-300"
                             data-index="{{ $index }}"
                         >
                             <div class="relative aspect-square w-full">
@@ -561,6 +587,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // Tracks & resume cache
   // =========================
   const serverResumes = @json($lastState ?? []);
+  const localResumes = readLocalResumes();
+
+// fusion simple : priorité au plus récent (updated_at), sinon local si server absent
+  function mergeResumes(server, local) {
+    const out = { ...(server || {}) };
+
+    Object.keys(local || {}).forEach((bookId) => {
+      const s = out[bookId];
+      const l = local[bookId];
+
+      const sTs = s?.updated_at ? Number(s.updated_at) : 0;
+      const lTs = l?.updated_at ? Number(l.updated_at) : 0;
+
+      if (!s) out[bookId] = l;
+      else if (lTs > sTs) out[bookId] = l;
+    });
+
+    return out;
+  }
+
+  const mergedResumes = mergeResumes(serverResumes, localResumes);
+
+  // remplace ensuite ton serverResumes par mergedResumes
+  Object.assign(serverResumes, mergedResumes);
 
   const tracks = Array.from(buttons).map((btn, index) => {
     const meta = btn.querySelector('.track-meta');
@@ -681,7 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
   artist: track.artist || '',
   cover: track.cover || '',
 };
-
+  saveResumeLocal(track, payload.time); // ✅ ici
     const now = Date.now();
     if (!manual && now - lastServerSaveTs < SAVE_INTERVAL_MS - 10_000) return;
 
@@ -704,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Erreur sauvegarde audio:', await res.text());
       } else {
         lastServerSaveTs = now;
-
+        payload.updated_at = Date.now();
         serverResumes[track.bookId] = payload;
         updateResumeButtonForCurrentTrack();
         updateTrackBadges();
@@ -850,6 +900,7 @@ let myCommentsTimer = null;
     if (!track) return;
 
     currentIndex = index;
+    setLastBookId(track.bookId);
     audioEl.src  = track.url;
     applyTrackToUI(track);
 
@@ -946,6 +997,58 @@ let myCommentsTimer = null;
 
   let shareDuration = 30;
 
+
+
+// =========================
+// LocalStorage resume store
+// =========================
+  const LS_RESUME_KEY = 'leodible_resumes_v1';      // { [bookId]: {time, title, url, cover, artist, updated_at} }
+  const LS_LAST_KEY   = 'leodible_last_book_id_v1'; // "hp2"
+
+  function readLocalResumes() {
+    try {
+      return JSON.parse(localStorage.getItem(LS_RESUME_KEY) || '{}') || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeLocalResumes(obj) {
+    localStorage.setItem(LS_RESUME_KEY, JSON.stringify(obj || {}));
+  }
+
+  function setLastBookId(bookId) {
+    if (bookId) localStorage.setItem(LS_LAST_KEY, String(bookId));
+  }
+
+  function getLastBookId() {
+    return localStorage.getItem(LS_LAST_KEY) || null;
+  }
+
+  /**
+  * Sauve l'état local + marque ce book comme "dernier lu"
+  */
+  function saveResumeLocal(track, timeSec) {
+  if (!track?.bookId) return;
+
+  const t = Math.floor(timeSec || 0);
+  const resumes = readLocalResumes();
+
+  resumes[track.bookId] = {
+    book_id: track.bookId,
+    time: t,
+    url: track.url || null,
+    title: track.title || '',
+    artist: track.artist || '',
+    cover: track.cover || '',
+    updated_at: Date.now()
+  };
+
+  writeLocalResumes(resumes);
+  setLastBookId(track.bookId);
+}
+
+
   function refreshShareLink() {
     const track = tracks[currentIndex];
     const t = Math.max(0, Math.floor(audioEl.currentTime || 0));
@@ -1028,6 +1131,10 @@ let myCommentsTimer = null;
   const commentsHidden = document.getElementById('comments-hidden');
   const addCommentNowBtn = document.getElementById('add-comment-now');
 
+
+
+
+
   let commentsCache = [];
   let commentsHiddenCount = 0;
   let modalInterval = null;
@@ -1038,6 +1145,12 @@ let myCommentsTimer = null;
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
+
+
+
+
+
+
 
   if (h > 0) {
     return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
@@ -1164,12 +1277,71 @@ async function fetchCommentsModal(){
   // =========================
   // INIT
   // =========================
-  if (tracks.length > 0) loadTrack(0, true, true);
-  else updateResumeButtonForCurrentTrack();
+  if (tracks.length > 0) {
+  const serverLast = serverResumes?.__last?.book_id || null;
+  const localLast  = getLastBookId();
+  const lastId = serverLast || localLast;
+
+  let idx = 0;
+  if (lastId) {
+    const found = tracks.find(t => String(t.bookId) === String(lastId));
+    if (found) idx = found.index;
+  } else {
+    // fallback : prends la plus récente via updated_at (ou la plus avancée si pas de timestamps)
+    let best = { idx: 0, score: -1 };
+    tracks.forEach(t => {
+      const r = serverResumes?.[t.bookId];
+      if (!r) return;
+      const score = (r.updated_at ? Number(r.updated_at) : 0) || (r.time ? Number(r.time) : 0);
+      if (score > best.score) best = { idx: t.index, score };
+    });
+    idx = best.idx;
+  }
+
+  loadTrack(idx, true, true);
+} else {
+  updateResumeButtonForCurrentTrack();
+}
 
   updateTrackBadges();
   fetchCommentsMain();
   fetchMyComments();
+
+
+  function saveBeforeLeave() {
+  const track = tracks[currentIndex];
+  if (!track) return;
+
+  const t = Math.floor(audioEl.currentTime || 0);
+  if (t < 1) return;
+
+  saveResumeLocal(track, t);
+
+  fetch(SAVE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': csrfToken,
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      book_id: track.bookId,
+      time: t,
+      url: track.url || null,
+      title: track.title || '',
+      artist: track.artist || '',
+      cover: track.cover || '',
+    }),
+    keepalive: true
+  }).catch(()=>{});
+}
+
+window.addEventListener('pagehide', saveBeforeLeave);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveBeforeLeave();
+});
+
+
 });
 </script>
 
