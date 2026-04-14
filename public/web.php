@@ -39,29 +39,7 @@ Route::get('/tickboss', function () {
 });
 
 
-Route::get('/fix-storage-link', function () {
 
-    $publicPath = public_path();
-    $target = base_path('storage/app/public');
-    $link = public_path('storage');
-
-    // Nettoyer si déjà existant
-    if (file_exists($link) || is_link($link)) {
-        unlink($link);
-    }
-
-    // Aller dans le bon dossier
-    chdir($publicPath);
-
-    // Créer lien RELATIF (important sur OVH)
-    exec('ln -s ../storage/app/public storage 2>&1', $output, $return);
-
-    return [
-        'return_code' => $return,
-        'output' => $output,
-        'link_exists' => file_exists($link),
-    ];
-});
 
 
 Route::get('/download/file1', function () {

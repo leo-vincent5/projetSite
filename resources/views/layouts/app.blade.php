@@ -21,6 +21,9 @@
 
     @yield("css")
 
+    
+    @stack('styles')
+
     <style>
         .navbar-light .navbar-nav .nav-link{
             color: dimgrey;
@@ -97,6 +100,10 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 
 @yield("js")
+
+@stack("scripts")
+
+
 <script>
     $(document).on('click','#navbarDropdown2',function () {
 
@@ -118,6 +125,7 @@
             $("#sousmenu").removeClass("show")
         }
     });
+
 
 </script>
 
