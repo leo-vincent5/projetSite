@@ -90,6 +90,7 @@ class Tip extends Model
         return mb_strtoupper(mb_substr($this->author_name, 0, 1));
     }
 
+  
     public function getImageUrlAttribute(): ?string
     {
         if (empty($this->image)) {
@@ -100,6 +101,11 @@ class Tip extends Model
             return $this->image;
         }
 
-        return asset($this->image);
+        if (Str::startsWith($this->image, 'storage/')) {
+            return asset($this->image);
+        }
+
+        return asset('storage/' . ltrim($this->image, '/'));
     }
+    
 }

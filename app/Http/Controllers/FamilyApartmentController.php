@@ -5,6 +5,7 @@ use App\Models\Booking;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
+use App\Models\Tip;
 
 class FamilyApartmentController extends Controller
 {
@@ -77,11 +78,18 @@ class FamilyApartmentController extends Controller
             ];
         });
 
+        $tips = Tip::query()
+    ->latest()
+    ->take(3)
+    ->get();
+
+
     return view('family-apartment.index', [
         'month' => $month,
         'calendarWeeks' => $days,
         'currentMonthLabel' => $month->translatedFormat('F Y'),
         'upcomingBookings' => $upcomingBookings,
+            'tips' => $tips,
     ]);
 }
 

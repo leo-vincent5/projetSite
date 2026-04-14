@@ -311,6 +311,94 @@
                     </section>
                 </aside>
             </div>
+            <section class="mt-2 space-y-4">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-extrabold md:text-3xl">Bons plans</h2>
+            <p class="text-sm text-stone-500">Les dernières idées et adresses partagées par la famille</p>
+        </div>
+
+        <a href="{{ route('family-apartment.tips.index') }}"
+           class="text-sm font-bold text-emerald-700 hover:underline">
+            Voir tout
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        @forelse(($tips ?? collect()) as $tip)
+            <a href="{{ route('family-apartment.tips.show', $tip) }}"
+               class="group overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+
+                <div class="relative h-40 bg-gradient-to-br from-stone-200 to-stone-100">
+                    @if($tip->image_url)
+                        <img
+                            src="{{ $tip->image_url }}"
+                            alt="{{ $tip->title }}"
+                            class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        >
+                    @else
+                        <div class="flex h-full w-full items-center justify-center text-5xl">
+                            {{ $tip->icon }}
+                        </div>
+                    @endif
+
+                    <div class="absolute left-4 top-4">
+                        <span class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide {{ $tip->category_color }}">
+                            {{ $tip->category_label }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-5">
+                    <div class="mb-2 flex items-start justify-between gap-3">
+                        <h3 class="text-lg font-bold text-stone-900">
+                            {{ $tip->title }}
+                        </h3>
+
+                        @if(!is_null($tip->rating))
+                            <div class="flex shrink-0 items-center gap-1 text-amber-500">
+                                <span>★</span>
+                                <span class="text-sm font-bold text-stone-700">
+                                    {{ number_format((float) $tip->rating, 1, ',', ' ') }}
+                                </span>
+                            </div>
+                        @endif
+                    </div>
+
+                    <p class="mb-3 line-clamp-2 text-sm leading-relaxed text-stone-600">
+                        {{ $tip->description }}
+                    </p>
+
+                    @if(!empty($tip->address))
+                        <p class="mb-3 text-sm text-stone-500">
+                            📍 {{ $tip->address }}
+                        </p>
+                    @endif
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+                                {{ $tip->author_initial }}
+                            </div>
+
+                            <span class="text-xs font-medium text-stone-500">
+                                {{ $tip->author_name }}
+                            </span>
+                        </div>
+
+                        <span class="text-sm font-bold text-emerald-700">
+                            Voir →
+                        </span>
+                    </div>
+                </div>
+            </a>
+        @empty
+            <div class="rounded-3xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-500 md:col-span-2 xl:col-span-3">
+                Aucun bon plan pour le moment.
+            </div>
+        @endforelse
+    </div>
+</section>
         </main>
 
         {{-- NAV MOBILE --}}
