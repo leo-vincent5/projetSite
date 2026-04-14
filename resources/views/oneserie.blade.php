@@ -220,7 +220,7 @@
             </button>
 
             <span class="text-xl font-black tracking-tighter text-fuchsia-500 uppercase font-headline">
-                CINEMATHEQUE
+                Knockturn Alley
             </span>
         </div>
 

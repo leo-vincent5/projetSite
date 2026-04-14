@@ -371,7 +371,7 @@ $bookIds = collect($tracks)
         'categoriesIds' => '*',
         'franchisesIds' => '*',
         'displayMode' => 'large',
-        'perPage' => 20,
+        'perPage' => 200,
 
     ]);
 
