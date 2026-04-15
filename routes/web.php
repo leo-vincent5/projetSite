@@ -205,13 +205,22 @@ Route::middleware('auth')->group(function () {
 
 
     Route::prefix('paris')->name('family-apartment.')->group(function () {
+   
     Route::get('/', [FamilyApartmentController::class, 'index'])->name('dashboard');
-    Route::get('/reservation/create', [FamilyApartmentController::class, 'create'])->name('bookings.create');
+
+    Route::get('/reservations/create', [FamilyApartmentController::class, 'create'])->name('bookings.create');
     Route::post('/reservations', [FamilyApartmentController::class, 'store'])->name('bookings.store');
-    Route::get('/show/{id}', [FamilyApartmentController::class, 'show'])->name('bookings.show');
-    Route::get('/edit', [FamilyApartmentController::class, 'edit'])->name('bookings.edit');
-    Route::get('/destroy', [FamilyApartmentController::class, 'destroy'])->name('bookings.destroy');
+
+    Route::get('/reservations/{booking}', [FamilyApartmentController::class, 'show'])->name('bookings.show');
+
+    Route::get('/reservations/{booking}/edit', [FamilyApartmentController::class, 'edit'])->name('bookings.edit');
+
+    Route::put('/reservations/{booking}', [FamilyApartmentController::class, 'update'])->name('bookings.update');
+
+    Route::delete('/reservations/{booking}', [FamilyApartmentController::class, 'destroy'])->name('bookings.destroy');
+
     Route::get('/infos', [FamilyApartmentController::class, 'infos'])->name('infos');
+
 
     Route::get('/infos', [FamilyApartmentController::class, 'infos'])->name('infos');
     Route::get('/historique', [FamilyApartmentController::class, 'history'])->name('history');

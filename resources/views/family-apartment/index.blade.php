@@ -69,8 +69,8 @@
 
         $memo = $memo ?? "N'oubliez pas de vider le frigo et de fermer les volets avant de partir.";
         $usefulInfos = $usefulInfos ?? [
-            ['icon' => 'wifi', 'label' => 'Wifi : FamilyHearth_4G'],
-            ['icon' => 'vpn_key', 'label' => 'Code boîte à clés : 4242'],
+     
+            ['icon' => 'vpn_key', 'label' => 'Code d\'entrée : 9092'],
         ];
 
         $weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -117,6 +117,11 @@
     </div>
 </header>
         <main class="mx-auto max-w-7xl space-y-10 px-6 pt-28">
+            @if(session('success'))
+                <div class="rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-800 px-5 py-4 font-semibold shadow-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
             {{-- HERO --}}
             <section
                 class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-300 px-8 py-10 text-white shadow-xl md:px-12 md:py-14">

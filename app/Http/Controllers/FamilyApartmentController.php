@@ -178,4 +178,82 @@ public function history(){
     return view('family-apartment.history', compact('pastBookings'));
 }
 
+public function destroy(Request $request, $id)
+{
+    $booking = Booking::findOrFail($id);
+    $booking->delete();
+
+    return redirect()
+        ->route('family-apartment.dashboard')
+        ->with('success', 'Le séjour a bien été supprimé.');
+
+}
+
+
+public function edit($id)
+{
+    $booking = Booking::findOrFail($id);    
+
+    return view('family-apartment.bookings.edit', compact('booking'));
+}
+
+
+public function update(Request $request, Booking $booking)
+{
+    $validated = $request->validate([
+        'title' => ['nullable', 'string', 'max:255'],
+        'name' => ['required', 'string', 'max:255'],
+        'start_date' => ['required', 'date'],
+        'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+        'status' => ['required', 'in:confirmed,pending,cancelled'],
+        'guests_count' => ['nullable', 'integer', 'min:1'],
+        'description' => ['nullable', 'string'],
+        'practical_info' => ['nullable', 'string', 'max:255'],
+        'reminder_note' => ['nullable', 'string'],
+    ]);
+
+    $startDate = Carbon::parse($validated['start_date'])->toDateString();
+    $endDate = Carbon::parse($validated['end_date'])->toDateString();
+
+    $overlappingBooking = Booking::query()
+        ->where('id', '!=', $booking->id)
+        ->where('status', '!=', 'cancelled')
+        ->whereDate('start_date', '<=', $endDate)
+        ->whereDate('end_date', '>=', $startDate)
+        ->first();
+
+    if ($overlappingBooking) {
+        $conflictStart = Carbon::parse($overlappingBooking->start_date)->locale('fr');
+        $conflictEnd = Carbon::parse($overlappingBooking->end_date)->locale('fr');
+
+        if ($conflictStart->month === $conflictEnd->month && $conflictStart->year === $conflictEnd->year) {
+            $periodLabel = $conflictStart->translatedFormat('d') . ' - ' . $conflictEnd->translatedFormat('d F Y');
+        } else {
+            $periodLabel = $conflictStart->translatedFormat('d M Y') . ' - ' . $conflictEnd->translatedFormat('d M Y');
+        }
+
+        return back()
+            ->withInput()
+            ->withErrors([
+                'start_date' => 'Cette période est déjà réservée par ' . $overlappingBooking->name . ' du ' . $periodLabel . '.',
+            ]);
+    }
+
+    $booking->update([
+        'title' => $validated['title'] ?: null,
+        'name' => $validated['name'],
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+        'status' => $validated['status'],
+        'guests_count' => $validated['guests_count'] ?? null,
+        'description' => $validated['description'] ?? null,
+        'practical_info' => $validated['practical_info'] ?? null,
+        'reminder_note' => $validated['reminder_note'] ?? null,
+    ]);
+
+    return redirect()
+        ->route('family-apartment.bookings.show', $booking)
+        ->with('success', 'Le séjour a bien été modifié.');
+}
+
 }
