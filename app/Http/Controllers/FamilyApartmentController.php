@@ -115,26 +115,27 @@ public function store(Request $request)
     $startDate = Carbon::parse($validated['start_date'])->toDateString();
     $endDate = Carbon::parse($validated['end_date'])->toDateString();
 
-    $overlappingBooking = Booking::query()
-        ->where('status', '!=', 'cancelled')
-        ->whereDate('start_date', '<=', $endDate)
-        ->whereDate('end_date', '>=', $startDate)
-        ->first();
+   $force = $request->boolean('force');
 
-   if ($overlappingBooking) {
-    $conflictStart = Carbon::parse($overlappingBooking->start_date)->locale('fr');
-    $conflictEnd = Carbon::parse($overlappingBooking->end_date)->locale('fr');
+$overlappingBooking = Booking::query()
+    ->where('status', '!=', 'cancelled')
+    ->whereDate('start_date', '<=', $endDate)
+    ->whereDate('end_date', '>=', $startDate)
+    ->first();
 
-    if ($conflictStart->month === $conflictEnd->month && $conflictStart->year === $conflictEnd->year) {
-        $periodLabel = $conflictStart->translatedFormat('d') . ' - ' . $conflictEnd->translatedFormat('d F Y');
-    } else {
-        $periodLabel = $conflictStart->translatedFormat('d M Y') . ' - ' . $conflictEnd->translatedFormat('d M Y');
-    }
+if ($overlappingBooking && !$force) {
+
+    $conflictStart = \Carbon\Carbon::parse($overlappingBooking->start_date)->locale('fr');
+    $conflictEnd = \Carbon\Carbon::parse($overlappingBooking->end_date)->locale('fr');
+
+    $periodLabel = $conflictStart->translatedFormat('d M Y') . ' - ' . $conflictEnd->translatedFormat('d M Y');
 
     return back()
         ->withInput()
-        ->withErrors([
-            'start_date' => 'Cette période est déjà réservée par ' . $overlappingBooking->name . ' du ' . $periodLabel . '.',
+        ->with([
+            'conflict' => true,
+            'conflict_message' =>
+                "⚠️ Cette période chevauche celle de {$overlappingBooking->name} ({$periodLabel}). Confirmer ?"
         ]);
 }
 

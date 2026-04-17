@@ -94,11 +94,19 @@
   .pad-blue{background:#3b82f6}
 
   /* flash */
-  .pad.flash{filter:brightness(1.7);opacity:1}
+.pad.flash {
+  filter: brightness(0.8) saturate(1.6);
+  box-shadow: 
+    0 0 20px rgba(255,255,255,0.8),
+    0 0 40px rgba(255,255,255,0.6);
+}
+
+
   .simon-ui{display:flex;flex-direction:column;gap:10px}
   .status{display:flex;justify-content:space-between;gap:12px;font-size:14px;opacity:.9}
   .actions{display:flex;gap:10px}
   .actions button{padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;cursor:pointer}
+  
 </style>
 
 <script>
@@ -111,8 +119,8 @@
   const okInput = document.getElementById('simonOk');
 
   // --- Réglages simples
-  const FLASH_MS = 350;
-  const GAP_MS = 180;
+const FLASH_MS = 1000;
+const GAP_MS = 700;
 
   // --- State
   let seq = [];
@@ -136,15 +144,25 @@
   function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
   }
+async function flashPad(i) {
+  const el = pads[i];
 
-  async function flashPad(i) {
-    const el = pads[i];
-    el.classList.add('flash');
-    await sleep(FLASH_MS);
-    el.classList.remove('flash');
-    await sleep(GAP_MS);
-  }
+  // on cache presque tout
+  pads.forEach(p => p.style.opacity = "0.05");
 
+  // on met en avant le bon
+  el.style.opacity = "1";
+  el.classList.add('flash');
+
+  await sleep(FLASH_MS);
+
+  el.classList.remove('flash');
+
+  // on remet normal
+  pads.forEach(p => p.style.opacity = "0.9");
+
+  await sleep(GAP_MS);
+}
   function addStep() {
     const next = Math.floor(Math.random() * 4);
     seq.push(next);

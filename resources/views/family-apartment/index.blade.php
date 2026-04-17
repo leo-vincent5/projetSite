@@ -316,6 +316,66 @@
                     </section>
                 </aside>
             </div>
+
+            <section class="mt-6 space-y-4">
+    <div>
+        <h2 class="text-2xl font-extrabold md:text-3xl">Pour le trajet 🚆</h2>
+        <p class="text-sm text-stone-500">De quoi s’occuper pendant le voyage</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+        {{-- AUDIO --}}
+        <a href="/alohomora"
+           target="_blank"
+           class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 to-indigo-500 p-6 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl hover:no-underline">
+
+            <div class="relative z-10">
+                <div class="text-4xl mb-3">🎧</div>
+
+                <h3 class="text-xl font-bold mb-1">
+                    Écouter dans le train
+                </h3>
+
+                <p class="text-sm text-white/80">
+                    Léodible, Livre audio pour le trajets en train. Parfait pour se plonger dans une histoire sans avoir à regarder un écran.
+                </p>
+
+                <div class="mt-4 text-sm font-bold">
+                    Lancer →
+                </div>
+            </div>
+
+            <div class="absolute -right-6 -bottom-6 text-7xl opacity-10">🎶</div>
+        </a>
+
+        {{-- STREAMING --}}
+        <a href="/aloserie"
+           target="_blank"
+           class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-green-400 p-6 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl hover:no-underline">
+
+            <div class="relative z-10">
+                <div class="text-4xl mb-3">🎬</div>
+
+                <h3 class="text-xl font-bold mb-1">
+                    Regarder pendant le voyage
+                </h3>
+
+                <p class="text-sm text-white/80">
+                    Knockturn Alley, une sélection de séries à regarder pendant le trajet
+                </p>
+
+                <div class="mt-4 text-sm font-bold">
+                    Ouvrir →
+                </div>
+            </div>
+
+            <div class="absolute -right-6 -bottom-6 text-7xl opacity-10">📺</div>
+        </a>
+
+    </div>
+</section>
+
             <section class="mt-2 space-y-4">
     <div class="flex items-center justify-between">
         <div>
@@ -332,7 +392,7 @@
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         @forelse(($tips ?? collect()) as $tip)
             <a href="{{ route('family-apartment.tips.show', $tip) }}"
-               class="group overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+               class="group overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:no-underline">
 
                 <div class="relative h-40 bg-gradient-to-br from-stone-200 to-stone-100">
                     @if($tip->image_url)

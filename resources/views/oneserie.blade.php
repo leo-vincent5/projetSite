@@ -269,10 +269,11 @@
                         {{ $response['title'] ?? 'NEON ECHOES' }}
                     </h1>
 
-                    @if(!empty($response['categories']))
+                    @if (!empty($response['categories']))
                         <div class="flex flex-wrap gap-2 mt-2">
-                            @foreach($response['categories'] as $category)
-                                <span class="px-3 py-1 bg-surface-variant/50 backdrop-blur-md rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest text-white border border-white/10">
+                            @foreach ($response['categories'] as $category)
+                                <span
+                                    class="px-3 py-1 bg-surface-variant/50 backdrop-blur-md rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest text-white border border-white/10">
                                     {{ $category['name'] }}
                                 </span>
                             @endforeach
@@ -385,7 +386,7 @@
                             @endphp
 
                             <div class="group flex flex-col md:flex-row items-start md:items-center gap-6 p-4 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer"
-                                onclick="openPlayer(@js($episode['name']), @js($link))">
+                                onclick="openPlayerByEpisode(@js($episode['name']), @js($link), {{ $loop->index }})">
                                 <span
                                     class="text-2xl font-black text-outline-variant group-hover:text-primary transition-colors font-headline">
                                     {{ $episode['episode'] }}
@@ -436,7 +437,8 @@
 
                     <div>
                         <h4 class="text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-3">Descriptions</h4>
-                        <p class="text-on-surface font-medium">{{ Arr::get($response, 'overview', 'No description available.') }}</p>
+                        <p class="text-on-surface font-medium">
+                            {{ Arr::get($response, 'overview', 'No description available.') }}</p>
                     </div>
 
                     <div>
@@ -469,6 +471,14 @@
                         <p class="text-sm text-on-surface-variant">Explore the Cyberpunk collection</p>
                     </div>
                 </div> --}}
+                <div class="pt-2">
+                    <button type="button" id="copyResultButton"
+                        class="w-full px-5 py-3 rounded-xl bg-primary text-black font-bold uppercase tracking-widest text-sm hover:scale-[1.02] transition">
+                        Copier les liens MP4 / M3U8
+                    </button>
+
+                    <p id="copyResultMessage" class="mt-3 text-sm text-on-surface-variant hidden"></p>
+                </div>
             </div>
         </div>
     </main>
@@ -518,97 +528,506 @@
 
                 <div class="relative bg-black aspect-video w-full">
                     <video id="episodePlayer" class="w-full h-full" controls playsinline></video>
+
+                    <!-- Overlay épisode suivant -->
+                    <div id="nextEpisodeOverlay"
+                        class="hidden absolute inset-0 bg-black/80 flex items-center justify-center p-6 z-[101]">
+                        <div
+                            class="max-w-md w-full rounded-2xl bg-surface-container-low border border-white/10 p-6 text-center shadow-2xl">
+
+                            <p class="text-sm uppercase tracking-widest text-on-surface-variant mb-2">
+                                Lecture terminée
+                            </p>
+
+                            <h4 id="nextEpisodeTitle" class="text-xl font-bold mb-3">
+                                Épisode suivant
+                            </h4>
+
+                            <p class="text-on-surface-variant mb-6">
+                                Démarrage dans
+                                <span id="nextEpisodeCountdown" class="font-bold text-white">5</span>
+                                secondes
+                            </p>
+                            <div class="mb-6 text-left">
+                                <label for="nextEpisodeTriggerSeconds"
+                                    class="block text-sm text-on-surface-variant mb-2">
+                                    Ouvrir cet écran avant la fin de l’épisode
+                                </label>
+
+                                <div class="flex items-center gap-3">
+                                    <input id="nextEpisodeTriggerSeconds" type="number" min="0"
+                                        max="300" step="1" value="10"
+                                        class="w-24 rounded-xl bg-black/40 border border-white/10 px-3 py-2 text-white focus:border-primary focus:ring-0">
+                                    <span class="text-sm text-on-surface-variant">secondes</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-center gap-3">
+
+                                <button type="button" id="playNextEpisodeNow"
+                                    class="px-5 py-3 rounded-xl bg-primary text-black font-bold uppercase tracking-widest text-sm hover:scale-105 transition">
+                                    ▶ Lancer maintenant
+                                </button>
+
+                                <button type="button" id="cancelNextEpisode"
+                                    class="px-5 py-3 rounded-xl bg-white/10 text-white font-bold uppercase tracking-widest text-sm hover:bg-white/20 transition">
+                                    Annuler
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+
+    @php
+    $jsEpisodes = collect($responseSaison)
+        ->map(function ($episode) use ($result, $lang, $saison) {
+            $episodeNumber = Arr::get($episode, 'episode');
+
+            return [
+                'id' => Arr::get($episode, 'id'),
+                'episode' => $episodeNumber,
+                'title' => Arr::get($episode, 'name'),
+                'url' => Arr::get($result, $lang . '.' . $saison . '.' . $episodeNumber . '.url'),
+            ];
+        })
+        ->values();
+@endphp
+
+
     <script>
-        let hlsInstance = null;
+        window.playerEpisodes = @json($jsEpisodes);
+    </script>
 
-        function openPlayer(title, m3u8Url) {
-            const modal = document.getElementById('playerModal');
-            const video = document.getElementById('episodePlayer');
-            const playerTitle = document.getElementById('playerTitle');
+    <script>
+let hlsInstance = null;
+let currentEpisodeIndex = null;
+let nextEpisodeTimeout = null;
+let nextEpisodeInterval = null;
+let nextEpisodeRemaining = 5;
+let nextEpisodeOverlayShown = false;
 
-            if (!modal || !video || !m3u8Url) {
-                console.warn('Player impossible à ouvrir', {
-                    title,
-                    m3u8Url
-                });
-                return;
-            }
+const NEXT_EPISODE_TRIGGER_KEY = 'next_episode_trigger_seconds';
 
-            playerTitle.textContent = title || 'Lecture';
-            modal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
+function getNextEpisodeTriggerSeconds() {
+    const saved = localStorage.getItem(NEXT_EPISODE_TRIGGER_KEY);
+    const value = parseInt(saved ?? '10', 10);
 
-            if (hlsInstance) {
-                hlsInstance.destroy();
-                hlsInstance = null;
-            }
+    if (Number.isNaN(value)) return 10;
+    return Math.max(0, Math.min(300, value));
+}
 
-            video.pause();
-            video.removeAttribute('src');
-            video.load();
+function setNextEpisodeTriggerSeconds(value) {
+    const normalized = Math.max(0, Math.min(300, parseInt(value || '10', 10)));
+    localStorage.setItem(NEXT_EPISODE_TRIGGER_KEY, String(normalized));
 
-            if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = m3u8Url;
-            } else if (window.Hls && Hls.isSupported()) {
-                hlsInstance = new Hls();
-                hlsInstance.loadSource(m3u8Url);
-                hlsInstance.attachMedia(video);
-            } else {
-                alert('Votre navigateur ne supporte pas la lecture HLS.');
-                return;
-            }
+    const input = document.getElementById('nextEpisodeTriggerSeconds');
+    if (input) {
+        input.value = normalized;
+    }
 
-            video.play().catch((error) => {
-                console.warn('Lecture auto bloquée par le navigateur', error);
-            });
+    return normalized;
+}
+
+function getNextEpisode() {
+    if (!Array.isArray(window.playerEpisodes)) return null;
+    if (currentEpisodeIndex === null) return null;
+
+    return window.playerEpisodes[currentEpisodeIndex + 1] ?? null;
+}
+
+function hideNextEpisodeOverlay() {
+    const overlay = document.getElementById('nextEpisodeOverlay');
+    const countdown = document.getElementById('nextEpisodeCountdown');
+
+    if (overlay) overlay.classList.add('hidden');
+    if (countdown) countdown.textContent = '5';
+
+    if (nextEpisodeTimeout) {
+        clearTimeout(nextEpisodeTimeout);
+        nextEpisodeTimeout = null;
+    }
+
+    if (nextEpisodeInterval) {
+        clearInterval(nextEpisodeInterval);
+        nextEpisodeInterval = null;
+    }
+
+    nextEpisodeRemaining = 5;
+}
+
+function showNextEpisodeOverlay() {
+    const overlay = document.getElementById('nextEpisodeOverlay');
+    const title = document.getElementById('nextEpisodeTitle');
+    const countdown = document.getElementById('nextEpisodeCountdown');
+
+    const nextEpisode = getNextEpisode();
+
+    if (!overlay || !nextEpisode || !nextEpisode.url) {
+        return;
+    }
+
+    title.textContent = nextEpisode.title || 'Épisode suivant';
+    countdown.textContent = '5';
+    overlay.classList.remove('hidden');
+
+    nextEpisodeRemaining = 5;
+
+    nextEpisodeInterval = setInterval(() => {
+        nextEpisodeRemaining--;
+
+        if (countdown) {
+            countdown.textContent = String(Math.max(0, nextEpisodeRemaining));
         }
+    }, 1000);
 
-        function closePlayer() {
-            const modal = document.getElementById('playerModal');
-            const video = document.getElementById('episodePlayer');
+    nextEpisodeTimeout = setTimeout(() => {
+        playNextEpisode();
+    }, 5000);
+}
 
-            if (hlsInstance) {
-                hlsInstance.destroy();
-                hlsInstance = null;
-            }
+function openPlayerByEpisode(title, m3u8Url, episodeIndex = null) {
+    currentEpisodeIndex = episodeIndex;
+    nextEpisodeOverlayShown = false;
 
-            if (video) {
-                video.pause();
-                video.removeAttribute('src');
-                video.load();
-            }
+    const episodeData = Array.isArray(window.playerEpisodes)
+        ? window.playerEpisodes[episodeIndex] ?? null
+        : null;
 
-            if (modal) {
-                modal.classList.add('hidden');
-            }
+    if (episodeData) {
+        window.currentSeries.episode_id = episodeData.id ?? null;
+        window.currentSeries.episode_title = episodeData.title ?? title ?? '';
+    }
 
-            document.body.classList.remove('overflow-hidden');
-        }
+    openPlayer(title, m3u8Url);
+}
 
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
+function openPlayer(title, m3u8Url) {
+    const modal = document.getElementById('playerModal');
+    const video = document.getElementById('episodePlayer');
+    const playerTitle = document.getElementById('playerTitle');
+
+    if (!modal || !video || !m3u8Url) {
+        console.warn('Player impossible à ouvrir', { title, m3u8Url });
+        return;
+    }
+
+    hideNextEpisodeOverlay();
+    nextEpisodeOverlayShown = false;
+
+    playerTitle.textContent = title || 'Lecture';
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+
+    if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+    }
+
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = m3u8Url;
+    } else if (window.Hls && Hls.isSupported()) {
+        hlsInstance = new Hls();
+        hlsInstance.loadSource(m3u8Url);
+        hlsInstance.attachMedia(video);
+    } else {
+        alert('Votre navigateur ne supporte pas la lecture HLS.');
+        return;
+    }
+
+    video.play().catch((error) => {
+        console.warn('Lecture auto bloquée par le navigateur', error);
+    });
+}
+
+function playNextEpisode() {
+    const nextEpisode = getNextEpisode();
+
+    if (!nextEpisode || !nextEpisode.url) {
+        hideNextEpisodeOverlay();
+        return;
+    }
+
+    currentEpisodeIndex = currentEpisodeIndex + 1;
+    hideNextEpisodeOverlay();
+    nextEpisodeOverlayShown = false;
+    openPlayer(nextEpisode.title, nextEpisode.url);
+}
+
+function closePlayer() {
+    const modal = document.getElementById('playerModal');
+    const video = document.getElementById('episodePlayer');
+
+    hideNextEpisodeOverlay();
+    nextEpisodeOverlayShown = false;
+
+    if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+    }
+
+    if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+    }
+
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+
+    document.body.classList.remove('overflow-hidden');
+}
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        closePlayer();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('playerModal');
+    const box = document.getElementById('playerBox');
+    const video = document.getElementById('episodePlayer');
+    const playNextBtn = document.getElementById('playNextEpisodeNow');
+    const cancelNextBtn = document.getElementById('cancelNextEpisode');
+    const triggerInput = document.getElementById('nextEpisodeTriggerSeconds');
+
+    if (triggerInput) {
+        triggerInput.value = getNextEpisodeTriggerSeconds();
+
+        triggerInput.addEventListener('change', function () {
+            setNextEpisodeTriggerSeconds(this.value);
+        });
+    }
+
+    if (modal && box) {
+        modal.addEventListener('click', function (e) {
+            if (!box.contains(e.target)) {
                 closePlayer();
             }
         });
+    }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const modal = document.getElementById('playerModal');
-            const box = document.getElementById('playerBox');
+    if (video) {
+        video.addEventListener('timeupdate', function () {
+            const nextEpisode = getNextEpisode();
+            if (!nextEpisode || !nextEpisode.url) return;
+            if (nextEpisodeOverlayShown) return;
+            if (!Number.isFinite(video.duration) || video.duration <= 0) return;
 
-            if (modal && box) {
-                modal.addEventListener('click', function(e) {
-                    if (!box.contains(e.target)) {
-                        closePlayer();
-                    }
-                });
+            const remaining = video.duration - video.currentTime;
+            const triggerSeconds = getNextEpisodeTriggerSeconds();
+
+            if (remaining <= triggerSeconds) {
+                nextEpisodeOverlayShown = true;
+                showNextEpisodeOverlay();
             }
         });
+
+        video.addEventListener('ended', function () {
+            if (!nextEpisodeOverlayShown) {
+                nextEpisodeOverlayShown = true;
+                showNextEpisodeOverlay();
+            }
+        });
+    }
+
+    if (playNextBtn) {
+        playNextBtn.addEventListener('click', function () {
+            playNextEpisode();
+        });
+    }
+
+    if (cancelNextBtn) {
+        cancelNextBtn.addEventListener('click', function () {
+            hideNextEpisodeOverlay();
+        });
+    }
+});
+</script>
+
+    <script>
+        window.resultToCopy = @json($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const copyButton = document.getElementById('copyResultButton');
+            const copyMessage = document.getElementById('copyResultMessage');
+
+            if (!copyButton) return;
+
+            function showMessage(text, isError = false) {
+                if (!copyMessage) return;
+                copyMessage.textContent = text;
+                copyMessage.classList.remove('hidden', 'text-red-300', 'text-green-300', 'text-on-surface-variant');
+                copyMessage.classList.add(isError ? 'text-red-300' : 'text-green-300');
+            }
+
+            async function copyTextToClipboard(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return;
+                }
+
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                textarea.style.pointerEvents = 'none';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+
+                const success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                if (!success) {
+                    throw new Error('Copie impossible');
+                }
+            }
+
+            copyButton.addEventListener('click', async function() {
+                try {
+                    const text = typeof window.resultToCopy === 'string' ?
+                        window.resultToCopy :
+                        JSON.stringify(window.resultToCopy, null, 2);
+
+                    await copyTextToClipboard(text);
+
+                    showMessage('Les liens ont été copiés dans le presse-papiers.');
+                } catch (error) {
+                    console.error(error);
+                    showMessage('Impossible de copier les liens.', true);
+                }
+            });
+        });
+    </script>
+
+<script>
+    window.seriesProgressUrl = @js(route('series.progress.store'));
+    window.csrfToken = @js(csrf_token());
+
+    window.currentSeries = {
+        series_id: @json($serie['id'] ?? null),
+        series_title: @json($serie['title'] ?? ''),
+        episode_id: @json($episode['id'] ?? null),
+        episode_title: @json($episode['title'] ?? ''),
+        poster: @json($serie['small_poster_path'] ?? null),
+    };
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const video = document.getElementById('episodePlayer');
+    if (!video || !window.currentSeries?.series_id) return;
+
+    let lastSavedAt = 0;
+    const SAVE_EVERY_SECONDS = 120;
+
+    async function saveProgress(force = false) {
+        if (!video.duration || isNaN(video.duration)) return;
+        if (!window.currentSeries?.episode_id) return;
+
+        const currentTime = Math.floor(video.currentTime || 0);
+        const duration = Math.floor(video.duration || 0);
+
+        if (!force && (currentTime - lastSavedAt) < SAVE_EVERY_SECONDS) {
+            return;
+        }
+
+        lastSavedAt = currentTime;
+
+        try {
+            const response = await fetch(window.seriesProgressUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    series_id: window.currentSeries.series_id,
+                    series_title: window.currentSeries.series_title,
+                    episode_id: window.currentSeries.episode_id,
+                    episode_title: window.currentSeries.episode_title,
+                    current_time: currentTime,
+                    duration: duration,
+                    poster: window.currentSeries.poster,
+                })
+            });
+
+            if (!response.ok) {
+                console.error('Erreur HTTP sauvegarde progression', response.status);
+            }
+        } catch (error) {
+            console.error('Erreur sauvegarde progression', error);
+        }
+    }
+
+    video.addEventListener('timeupdate', function () {
+        saveProgress(false);
+    });
+
+    video.addEventListener('pause', function () {
+        saveProgress(true);
+    });
+
+    video.addEventListener('ended', function () {
+        saveProgress(true);
+    });
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') {
+            saveProgress(true);
+        }
+    });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const video = document.getElementById('episodePlayer');
+    const resume = @json(auth()->check() ? auth()->user()->series_resume : null);
+
+    if (!video || !resume) return;
+
+    const savedEpisodeId = Number(resume.episode_id || 0);
+
+    if (!savedEpisodeId || !Array.isArray(window.playerEpisodes)) return;
+
+    const foundIndex = window.playerEpisodes.findIndex(ep => Number(ep.id || 0) === savedEpisodeId);
+    if (foundIndex === -1) return;
+
+    const savedEpisode = window.playerEpisodes[foundIndex];
+    if (!savedEpisode?.url) return;
+
+    window.currentSeries.episode_id = savedEpisode.id ?? null;
+    window.currentSeries.episode_title = savedEpisode.title ?? '';
+
+    openPlayerByEpisode(savedEpisode.title, savedEpisode.url, foundIndex);
+
+    video.addEventListener('loadedmetadata', function onLoaded() {
+        const savedTime = Number(resume.current_time || 0);
+
+        if (savedTime > 0 && savedTime < video.duration - 10) {
+            video.currentTime = savedTime;
+        }
+
+        video.removeEventListener('loadedmetadata', onLoaded);
+    });
+});
+</script>
+
 </body>
 
 </html>

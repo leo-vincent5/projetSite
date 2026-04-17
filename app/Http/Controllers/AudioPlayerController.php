@@ -480,4 +480,81 @@ $bookIds = collect($tracks)
             ], 500);
         }
     }
+
+
+    public function catalog(){
+
+
+    $categoriesResponse = Http::get('https://api.purstream.art/api/v1/catalog/categories');
+$activeFilters = collect(request()->input('categories', []))
+    ->map(fn ($id) => (int) $id)
+    ->all();
+
+
+      $categoriesIds = !empty($activeFilters)
+        ? implode(',', $activeFilters)
+        : '*';
+  
+    $filters = $categoriesResponse->json();
+    $filters = $filters['data']['items'];
+    $response = Http::get('https://api.purstream.art/api/v1/catalog/movies', [
+        'search' => '',
+        'page' => 1,
+        'sortBy' => 'newest',
+        'types' => 'tv',
+        'categoriesIds' => $categoriesIds,
+        'franchisesIds' => '*',
+        'displayMode' => 'large',
+        'perPage' => 200,
+
+    ]);
+
+    $series = $response->json();
+    $series = $series['data']['items']['data'];
+
+    return view('serie.catalog', compact('series' , 'filters') );
+    }
+
+
+ public function store(Request $request)
+    {
+        $data = $request->validate([
+            'series_id' => ['required', 'integer'],
+            'series_title' => ['required', 'string', 'max:255'],
+            'episode_id' => ['nullable', 'integer'],
+            'episode_title' => ['nullable', 'string', 'max:255'],
+            'current_time' => ['required', 'integer', 'min:0'],
+            'duration' => ['nullable', 'integer', 'min:0'],
+            'poster' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $duration = (int) ($data['duration'] ?? 0);
+        $currentTime = (int) $data['current_time'];
+
+        $progressPercent = $duration > 0
+            ? min(100, (int) round(($currentTime / $duration) * 100))
+            : 0;
+
+        $request->user()->update([
+            'series_resume' => [
+                'series_id' => $data['series_id'],
+                'series_title' => $data['series_title'],
+                'episode_id' => $data['episode_id'] ?? null,
+                'episode_title' => $data['episode_title'] ?? null,
+                'current_time' => $currentTime,
+                'duration' => $duration,
+                'progress_percent' => $progressPercent,
+                'poster' => $data['poster'] ?? null,
+                'updated_at' => now()->toDateTimeString(),
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Progression sauvegardée',
+            'series_resume' => $request->user()->fresh()->series_resume,
+        ]);
+    }
+
+
     }

@@ -187,7 +187,7 @@
         <nav class="hidden md:flex items-center gap-8">
             <a class="text-fuchsia-400 font-bold text-sm tracking-widest uppercase" href="#">Accueil</a>
             <a class="text-neutral-400 font-bold text-sm tracking-widest uppercase hover:text-fuchsia-300 transition-colors duration-300"
-                href="#">Découvrir</a>
+                href="{{ route('catalog') }}">Découvrir</a>
             <a class="text-neutral-400 font-bold text-sm tracking-widest uppercase hover:text-fuchsia-300 transition-colors duration-300"
                 href="#">Ma Liste</a>
         </nav>
@@ -219,9 +219,9 @@
 
             <div class="relative h-full flex flex-col justify-end px-6 md:px-16 pb-20 max-w-5xl">
 
-                <span class="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase mb-4">
+                {{-- <span class="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs w-20 font-bold uppercase mb-4">
                     Featured
-                </span>
+                </span> --}}
 
                 <!-- Titre -->
                 <h1 id="heroTitle" class="font-headline text-5xl md:text-8xl font-black mb-6">

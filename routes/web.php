@@ -130,12 +130,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/searchSeries', [AudioPlayerController::class, 'search'])->name('series.search');
     Route::get('/aloserie',[AudioPlayerController::class, 'aloserie'])->name('aloserie');
     Route::get('/oneserie/{id}',[AudioPlayerController::class, 'oneserie'])->name('oneserie');
+    Route::post('series/progress', [AudioPlayerController::class, 'store'])->name('series.progress.store');
+
+
     Route::get('/comments/my', [CommentController::class, 'my'])->name('comments.my');
     Route::delete('/circles/{circle}/members/{user}',[CircleController::class, 'removeMember'])->name('circles.members.remove');
     Route::post('/circles', [CircleController::class, 'store'])->name('circles.store');
     Route::post('/circles/{circle}/join', [CircleController::class, 'join'])->name('circles.join');
     Route::get('/circles/{circle}', [CircleController::class, 'show'])->name('circles.show');
     Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+
+
+    Route::get('/catalog',[AudioPlayerController::class, 'catalog'])->name('catalog');
+
 
     // récupère les commentaires visibles pour un circle+book, selon ton avancement
     Route::get('/comments', [CommentController::class, 'index'])->name('comments.index');
