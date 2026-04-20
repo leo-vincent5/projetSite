@@ -189,7 +189,7 @@
             <a class="text-neutral-400 font-bold text-sm tracking-widest uppercase hover:text-fuchsia-300 transition-colors duration-300"
                 href="{{ route('catalog') }}">Découvrir</a>
             <a class="text-neutral-400 font-bold text-sm tracking-widest uppercase hover:text-fuchsia-300 transition-colors duration-300"
-                href="#">Ma Liste</a>
+                href="{{ route('history') }}">Historique</a>
         </nav>
 
         <div class="flex items-center">
@@ -204,28 +204,29 @@
     <main class="pb-24">
         <!-- Hero Section -->
         <section class="relative h-screen w-full overflow-hidden">
+            @php
+                $heroImage = $hero['small_poster_path'] ?? 'https://placehold.co/1600x900/111111/FFFFFF?text=Hero';
+                $heroType = ($hero['type'] ?? null) === 'movie' ? 'Film' : 'Série';
+            @endphp
 
-            <!-- Image dynamique -->
             <div id="heroBgA" class="absolute inset-0 bg-cover bg-center transition-opacity duration-700 opacity-100"
-                style="background-image: url('{{ $hero['small_poster_path'] }}');">
+                style="background-image: url('{{ $heroImage }}');">
             </div>
 
             <div id="heroBgB" class="absolute inset-0 bg-cover bg-center transition-opacity duration-700 opacity-0"
-                style="background-image: url('{{ $hero['small_poster_path'] }}');">
+                style="background-image: url('{{ $heroImage }}');">
             </div>
 
             <div class="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
             <div class="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent"></div>
 
             <div class="relative h-full flex flex-col justify-end px-6 md:px-16 pb-20 max-w-5xl">
-
-                {{-- <span class="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs w-20 font-bold uppercase mb-4">
-                    Featured
-                </span> --}}
-
-                <!-- Titre -->
+                <span id="heroTypeBadge"
+                    class="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs w-fit font-bold uppercase mb-4">
+                    {{ $heroType }}
+                </span>
                 <h1 id="heroTitle" class="font-headline text-5xl md:text-8xl font-black mb-6">
-                    {{ $hero['title'] }}
+                    {{ $hero['title'] ?? 'Sans titre' }}
                 </h1>
 
                 <div class="w-full max-w-2xl mb-8">
@@ -235,65 +236,92 @@
                             search
                         </span>
 
-                        <input type="text" id="seriesSearchInput" placeholder="Rechercher une série..."
+                        <input type="text" id="seriesSearchInput" placeholder="Rechercher un film ou une série..."
                             autocomplete="off"
                             class="w-full rounded-full border border-white/10 bg-black/40 backdrop-blur-md pl-14 pr-5 py-4 text-white placeholder:text-on-surface-variant focus:border-primary focus:ring-0">
                     </div>
                 </div>
 
-                <!-- Description -->
                 <p class="text-on-surface-variant text-lg max-w-2xl mb-8">
-
+                    {{ $hero['overview'] ?? '' }}
                 </p>
 
-                <div  class="flex gap-4">
-                    <a id="heroWatchLink" href="{{ route('oneserie', ['id' => $hero['id']]) }}" class="bg-primary px-6 py-3 rounded-full font-bold inline-flex items-center">
-    ▶ Regarder
-</a>
+                <div class="flex gap-4">
+                    <a id="heroWatchLink" href="{{ route('oneserie', ['id' => $hero['id']]) }}"
+                        class="bg-primary px-6 py-3 rounded-full font-bold inline-flex items-center">
+                        ▶ Regarder
+                    </a>
 
                     <button class="bg-white/10 px-6 py-3 rounded-full">
                         + My List
                     </button>
                 </div>
-
             </div>
         </section>
 
         <div class="space-y-12 -mt-10 relative z-10">
             <!-- My Series -->
-         <section class="pl-6 md:pl-16">
-    <div class="flex items-center justify-between pr-6 md:pr-16 mb-6">
-        <h2 class="font-headline text-2xl font-bold tracking-tight uppercase">My Series</h2>
-        <a class="text-primary text-sm font-bold tracking-widest uppercase hover:underline underline-offset-4"
-            href="#">View All</a>
-    </div>
-
-    <div id="mySeriesSlider"
-        class="flex gap-4 overflow-x-auto hide-scrollbar pb-4 w-full cursor-grab select-none">
-        @foreach ($datas as $item)
-            <a
-                href="{{ route('oneserie', ['id' => $item['id']]) }}"
-                class="slider-link shrink-0 block"
-                draggable="false"
-            >
-                <div class="w-72 group cursor-pointer">
-                    <div
-                        class="relative aspect-video rounded-lg overflow-hidden mb-3 bg-surface-container-low transition-all duration-500 group-hover:scale-105">
-                        <img
-                            class="w-full h-full object-cover pointer-events-none select-none"
-                            src="{{ $item['small_poster_path'] }}"
-                            alt="{{ $item['title'] }}"
-                            draggable="false"
-                        >
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div class="absolute bottom-0 left-0 w-full h-1 bg-surface-container-highest"></div>
-                    </div>
-                    <h3 class="font-bold text-base truncate">{{ $item['title'] }}</h3>
+            <section class="pl-6 md:pl-16">
+                <div class="flex items-center justify-between pr-6 md:pr-16 mb-6">
+                    <h2 class="font-headline text-2xl font-bold tracking-tight uppercase">Séries</h2>
+                    <a class="text-primary text-sm font-bold tracking-widest uppercase hover:underline underline-offset-4"
+                        href="{{ route('catalog', ['type' => 'tv']) }}">Voir tout</a>
                 </div>
-            </a>
-        @endforeach
-    </div>
-</section>
+
+                <div id="seriesSlider"
+                    class="flex gap-4 overflow-x-auto hide-scrollbar pb-4 w-full cursor-grab select-none">
+                    @foreach ($series ?? [] as $item)
+                        <a href="{{ route('oneserie', ['id' => $item['id']]) }}" class="slider-link shrink-0 block"
+                            draggable="false">
+                            <div class="w-72 group cursor-pointer">
+                                <div
+                                    class="relative aspect-video rounded-lg overflow-hidden mb-3 bg-surface-container-low transition-all duration-500 group-hover:scale-105">
+                                    <img class="w-full h-full object-cover pointer-events-none select-none"
+                                        src="{{ $item['small_poster_path'] ?? 'https://placehold.co/800x450/111111/FFFFFF?text=Serie' }}"
+                                        alt="{{ $item['title'] }}" draggable="false">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                                    <div class="absolute bottom-0 left-0 w-full h-1 bg-surface-container-highest"></div>
+                                </div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-primary font-bold text-xs uppercase tracking-tighter">Série</span>
+                                </div>
+                                <h3 class="font-bold text-base truncate">{{ $item['title'] }}</h3>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
+
+            <section class="pl-6 md:pl-16">
+                <div class="flex items-center justify-between pr-6 md:pr-16 mb-6">
+                    <h2 class="font-headline text-2xl font-bold tracking-tight uppercase">Films</h2>
+                    <a class="text-primary text-sm font-bold tracking-widest uppercase hover:underline underline-offset-4"
+                        href="{{ route('catalog', ['type' => 'movie']) }}">Voir tout</a>
+                </div>
+
+                <div id="moviesSlider"
+                    class="flex gap-4 overflow-x-auto hide-scrollbar pb-4 w-full cursor-grab select-none">
+                    @foreach ($movies ?? [] as $item)
+                        <a href="{{ route('oneserie', ['id' => $item['id']]) }}" class="slider-link shrink-0 block"
+                            draggable="false">
+                            <div class="w-72 group cursor-pointer">
+                                <div
+                                    class="relative aspect-video rounded-lg overflow-hidden mb-3 bg-surface-container-low transition-all duration-500 group-hover:scale-105">
+                                    <img class="w-full h-full object-cover pointer-events-none select-none"
+                                        src="{{ $item['small_poster_path'] ?? 'https://placehold.co/800x450/111111/FFFFFF?text=Film' }}"
+                                        alt="{{ $item['title'] }}" draggable="false">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                                    <div class="absolute bottom-0 left-0 w-full h-1 bg-surface-container-highest"></div>
+                                </div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-cyan-300 font-bold text-xs uppercase tracking-tighter">Film</span>
+                                </div>
+                                <h3 class="font-bold text-base truncate">{{ $item['title'] }}</h3>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
 
             {{-- <!-- Trending Now -->
             <section class="pl-6 md:pl-16">
@@ -405,14 +433,14 @@
             <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Home</span>
         </a>
         <a class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-200 transition-all"
-            href="#">
+            href="{{ route('catalog') }}">
             <span class="material-symbols-outlined">movie_filter</span>
-            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Originals</span>
+            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Catalogue</span>
         </a>
         <a class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-200 transition-all"
-            href="#">
-            <span class="material-symbols-outlined">download</span>
-            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Downloads</span>
+            href="{{ route('series.history') }}">
+            <span class="material-symbols-outlined">history</span>
+            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Historique</span>
         </a>
         <a class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-200 transition-all"
             href="#">
@@ -425,7 +453,8 @@
         <div id="searchModalBackdrop" class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
 
         <div class="relative z-[201] flex min-h-screen items-start justify-center px-4 pt-[10vh] pb-6">
-            <div class="w-full max-w-4xl rounded-3xl border border-white/10 bg-[#111111]/95 shadow-2xl overflow-hidden">
+            <div
+                class="w-full max-w-4xl rounded-3xl border border-white/10 bg-[#111111]/95 shadow-2xl overflow-hidden">
                 <div class="flex items-center gap-3 border-b border-white/10 px-4 md:px-6 py-4">
                     <span class="material-symbols-outlined text-on-surface-variant">search</span>
 
@@ -511,24 +540,24 @@
                         : '';
 
                     return `
-                                <a
-                                    href="/oneserie/${id}"
-                                    class="flex gap-4 rounded-2xl border border-white/5 bg-white/[0.03] p-3 hover:bg-white/[0.06] transition"
-                                >
-                                    <div class="w-20 h-28 rounded-xl overflow-hidden bg-black/30 shrink-0">
-                                        ${poster
-                                            ? `<img src="${poster}" alt="${title}" class="w-full h-full object-cover">`
-                                            : `<div class="w-full h-full flex items-center justify-center text-xs text-on-surface-variant px-2 text-center">Pas d'image</div>`
-                                        }
-                                    </div>
+                                                <a
+                                                    href="/oneserie/${id}"
+                                                    class="flex gap-4 rounded-2xl border border-white/5 bg-white/[0.03] p-3 hover:bg-white/[0.06] transition"
+                                                >
+                                                    <div class="w-20 h-28 rounded-xl overflow-hidden bg-black/30 shrink-0">
+                                                        ${poster
+                                                            ? `<img src="${poster}" alt="${title}" class="w-full h-full object-cover">`
+                                                            : `<div class="w-full h-full flex items-center justify-center text-xs text-on-surface-variant px-2 text-center">Pas d'image</div>`
+                                                        }
+                                                    </div>
 
-                                    <div class="min-w-0 flex-1">
-                                        <div class="font-bold text-white text-base truncate">${title}</div>
-                                        ${year ? `<div class="text-sm text-on-surface-variant mt-1">${year}</div>` : ''}
-                                        ${categories ? `<div class="text-xs text-on-surface-variant mt-2 line-clamp-2">${categories}</div>` : ''}
-                                    </div>
-                                </a>
-                            `;
+                                                    <div class="min-w-0 flex-1">
+                                                        <div class="font-bold text-white text-base truncate">${title}</div>
+                                                        ${year ? `<div class="text-sm text-on-surface-variant mt-1">${year}</div>` : ''}
+                                                        ${categories ? `<div class="text-xs text-on-surface-variant mt-2 line-clamp-2">${categories}</div>` : ''}
+                                                    </div>
+                                                </a>
+                                            `;
                 }).join('')}
             </div>
         `;
@@ -619,6 +648,8 @@
 
     <script>
         let activeLayer = 'A';
+        let featured = @json(array_values(array_merge($featuredSeries ?? [], $featuredMovies ?? [])));
+        let index = 0;
 
         function preloadImage(src) {
             return new Promise((resolve, reject) => {
@@ -634,301 +665,129 @@
             });
         }
 
-       async function changeHero(title, image, id = null) {
-    if (!image) {
-        console.warn('Image impossible à charger : valeur vide', image);
-        return;
-    }
+        async function changeHero(title, image, id = null, type = 'tv') {
+            if (!image) {
+                console.warn('Image impossible à charger : valeur vide', image);
+                return;
+            }
 
-    const heroTitle = document.getElementById('heroTitle');
-    const heroWatchLink = document.getElementById('heroWatchLink');
-    const bgA = document.getElementById('heroBgA');
-    const bgB = document.getElementById('heroBgB');
+            const heroTitle = document.getElementById('heroTitle');
+            const heroWatchLink = document.getElementById('heroWatchLink');
+            const heroTypeBadge = document.getElementById('heroTypeBadge');
+            const bgA = document.getElementById('heroBgA');
+            const bgB = document.getElementById('heroBgB');
 
-    try {
-        await preloadImage(image);
-    } catch (e) {
-        console.warn('Image impossible à charger', image);
-        return;
-    }
+            try {
+                await preloadImage(image);
+            } catch (e) {
+                console.warn('Image impossible à charger', image);
+                return;
+            }
 
-    const nextLayer = activeLayer === 'A' ? bgB : bgA;
-    const currentLayer = activeLayer === 'A' ? bgA : bgB;
+            const nextLayer = activeLayer === 'A' ? bgB : bgA;
+            const currentLayer = activeLayer === 'A' ? bgA : bgB;
 
-    nextLayer.style.backgroundImage = `url("${image}")`;
-    nextLayer.classList.remove('opacity-0');
-    nextLayer.classList.add('opacity-100');
+            nextLayer.style.backgroundImage = `url("${image}")`;
+            nextLayer.classList.remove('opacity-0');
+            nextLayer.classList.add('opacity-100');
 
-    currentLayer.classList.remove('opacity-100');
-    currentLayer.classList.add('opacity-0');
+            currentLayer.classList.remove('opacity-100');
+            currentLayer.classList.add('opacity-0');
 
-    if (heroTitle) heroTitle.textContent = title ?? '';
-    if (heroWatchLink && id) heroWatchLink.href = `/oneserie/${id}`;
+            if (heroTitle) heroTitle.textContent = title ?? '';
+            if (heroWatchLink && id) heroWatchLink.href = `/oneserie/${id}`;
+            if (heroTypeBadge) heroTypeBadge.textContent = type === 'movie' ? 'Film' : 'Série';
 
-    activeLayer = activeLayer === 'A' ? 'B' : 'A';
-}
-
-
-        let featured = @json($featured ?? []);
-        let index = 0;
+            activeLayer = activeLayer === 'A' ? 'B' : 'A';
+        }
 
         if (featured.length > 1) {
             setInterval(() => {
                 index = (index + 1) % featured.length;
                 const item = featured[index];
-                console.log('Changement de héros vers :', item);
-                changeHero(
-                    item.title,
-                   item.small_poster_path,  
-                    item.id,    
-                );
+                changeHero(item.title, item.small_poster_path, item.id, item.type);
             }, 5000);
         }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    const slider = document.getElementById('mySeriesSlider');
-    if (!slider) return;
-
-    let isDown = false;
-    let startX = 0;
-    let startScrollLeft = 0;
-    let dragged = false;
-
-    slider.querySelectorAll('a, img').forEach((el) => {
-        el.setAttribute('draggable', 'false');
-        el.addEventListener('dragstart', (e) => e.preventDefault());
-    });
-
-    slider.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return;
-
-        isDown = true;
-        dragged = false;
-        startX = e.pageX;
-        startScrollLeft = slider.scrollLeft;
-
-        slider.classList.add('cursor-grabbing');
-        slider.classList.remove('cursor-grab');
-    });
-
-    slider.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-
-        const dx = e.pageX - startX;
-
-        if (Math.abs(dx) > 6) {
-            dragged = true;
-            e.preventDefault();
-            slider.scrollLeft = startScrollLeft - dx * 1.2;
+        if (featured.length > 1) {
+            setInterval(() => {
+                index = (index + 1) % featured.length;
+                const item = featured[index];
+                changeHero(item.title, item.small_poster_path, item.id);
+            }, 5000);
         }
-    });
-
-    function stopDrag() {
-        isDown = false;
-        slider.classList.remove('cursor-grabbing');
-        slider.classList.add('cursor-grab');
-
-        setTimeout(() => {
-            dragged = false;
-        }, 50);
-    }
-
-    slider.addEventListener('mouseup', stopDrag);
-    slider.addEventListener('mouseleave', stopDrag);
-
-    slider.querySelectorAll('.slider-link').forEach((link) => {
-        link.addEventListener('click', (e) => {
-            if (dragged) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        });
-    });
-});
     </script>
+
+
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const input = document.getElementById('seriesSearchInput');
-            const resultsBox = document.getElementById('seriesSearchResults');
-            const resultsInner = document.getElementById('seriesSearchResultsInner');
+            const sliders = [
+                document.getElementById('seriesSlider'),
+                document.getElementById('moviesSlider')
+            ].filter(Boolean);
 
-            if (!input || !resultsBox || !resultsInner) return;
+            sliders.forEach((slider) => {
+                let isDown = false;
+                let startX = 0;
+                let startScrollLeft = 0;
+                let dragged = false;
 
-            let debounceTimer = null;
-            let abortController = null;
+                slider.querySelectorAll('a, img').forEach((el) => {
+                    el.setAttribute('draggable', 'false');
+                    el.addEventListener('dragstart', (e) => e.preventDefault());
+                });
 
-            function escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text ?? '';
-                return div.innerHTML;
-            }
+                slider.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return;
 
-            function closeResults() {
-                resultsBox.classList.add('hidden');
-                resultsInner.innerHTML = '';
-            }
+                    isDown = true;
+                    dragged = false;
+                    startX = e.pageX;
+                    startScrollLeft = slider.scrollLeft;
 
-            function openResults() {
-                resultsBox.classList.remove('hidden');
-            }
+                    slider.classList.add('cursor-grabbing');
+                    slider.classList.remove('cursor-grab');
+                });
 
-            function renderResults(items) {
-                if (!items.length) {
-                    resultsInner.innerHTML = `
-            <div class="px-6 py-6 text-sm text-on-surface-variant">
-                Aucun résultat trouvé.
-            </div>
-        `;
-                    return;
+                slider.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+
+                    const dx = e.pageX - startX;
+
+                    if (Math.abs(dx) > 6) {
+                        dragged = true;
+                        e.preventDefault();
+                        slider.scrollLeft = startScrollLeft - dx * 1.2;
+                    }
+                });
+
+                function stopDrag() {
+                    isDown = false;
+                    slider.classList.remove('cursor-grabbing');
+                    slider.classList.add('cursor-grab');
+
+                    setTimeout(() => {
+                        dragged = false;
+                    }, 50);
                 }
 
-                resultsInner.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
-            ${items.map(item => {
-                const title = escapeHtml(item.title ?? 'Sans titre');
-                const poster = item.small_poster_path ?? '';
-                const id = item.id ?? '';
-                const type = item.type ?? 'movie';
+                slider.addEventListener('mouseup', stopDrag);
+                slider.addEventListener('mouseleave', stopDrag);
 
-                let year = '';
-                if (item.release_date) {
-                    year = String(item.release_date).slice(0, 4);
-                }
-
-                const runtime = item.runtime ? `
-                $ {
-                    item.runtime
-                }
-                min` : '';
-                const lang = item.lang === 1 ? 'VF' : '';
-
-                return ` <
-                a
-                href = "/oneserie/${id}"
-                class =
-                "flex gap-4 rounded-2xl border border-white/5 bg-white/[0.03] p-3 hover:bg-white/[0.06] transition" >
-                <
-                div class = "w-20 h-28 rounded-xl overflow-hidden bg-black/30 shrink-0" >
-                $ {
-                    poster
-                        ?
-                        `<img src="${poster}" alt="${title}" class="w-full h-full object-cover">` :
-                        `<div class="w-full h-full flex items-center justify-center text-xs text-on-surface-variant px-2 text-center">Pas d'image</div>`
-                } <
-                /div>
-
-                <
-                div class = "min-w-0 flex-1" >
-                <
-                div class = "font-bold text-white text-base truncate" > $ {
-                    title
-                } < /div>
-
-                <
-                div class = "text-sm text-on-surface-variant mt-1 flex flex-wrap gap-2" >
-                $ {
-                    year ? `<span>${year}</span>` : ''
-                }
-                $ {
-                    runtime ? `<span>${runtime}</span>` : ''
-                }
-                $ {
-                    lang ? `<span>${lang}</span>` : ''
-                } <
-                /div>
-
-                <
-                div class = "text-xs text-on-surface-variant mt-2 uppercase tracking-widest" >
-                $ {
-                    escapeHtml(type)
-                } <
-                /div> < /
-                div > <
-                    /a>
-                `;
-            }).join('')}
-        </div>
-    `;
-            }
-
-            async function searchSeries(query) {
-                if (!query || query.trim().length < 2) {
-                    closeResults();
-                    return;
-                }
-
-                if (abortController) {
-                    abortController.abort();
-                }
-
-                abortController = new AbortController();
-
-                resultsInner.innerHTML = `
-            <div class="px-4 py-4 text-sm text-on-surface-variant">
-                Recherche en cours...
-            </div>
-        `;
-                openResults();
-
-                try {
-                    const response = await fetch(`/searchSeries?q=${encodeURIComponent(query)}`, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        signal: abortController.signal
+                slider.querySelectorAll('.slider-link').forEach((link) => {
+                    link.addEventListener('click', (e) => {
+                        if (dragged) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
                     });
-
-                    if (!response.ok) {
-                        throw new Error('Erreur serveur');
-                    }
-
-                    const data = await response.json();
-                    renderResults(data.results ?? []);
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        return;
-                    }
-
-                    resultsInner.innerHTML = `
-                <div class="px-4 py-4 text-sm text-red-300">
-                    Une erreur est survenue.
-                </div>
-            `;
-                    openResults();
-                }
-            }
-
-            input.addEventListener('input', function() {
-                const value = this.value;
-
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    searchSeries(value);
-                }, 300);
-            });
-
-            document.addEventListener('click', function(e) {
-                if (!resultsBox.contains(e.target) && e.target !== input) {
-                    closeResults();
-                }
-            });
-
-            input.addEventListener('focus', function() {
-                if (resultsInner.innerHTML.trim() !== '') {
-                    openResults();
-                }
-            });
-
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeResults();
-                }
+                });
             });
         });
     </script>
+
+
 
 
 </body>

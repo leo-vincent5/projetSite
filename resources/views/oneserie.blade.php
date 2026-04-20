@@ -210,6 +210,19 @@
         }
     @endphp
 
+    @php
+        $mediaType = strtolower((string) ($response['type'] ?? ''));
+        $isMovie = in_array($mediaType, ['movie', 'film'], true);
+        $isSeries = !$isMovie;
+    @endphp
+
+    @php
+        $movieUrl =
+            Arr::get($result, $lang . '.0.url') ??
+            (Arr::get($result, 'fr.0.url') ?? (Arr::get($result, 'vo.0.url') ?? null));
+    @endphp
+
+
     <!-- TopAppBar -->
     <nav class="fixed top-0 w-full z-50 bg-neutral-950/60 backdrop-blur-xl flex justify-between items-center px-6 h-16">
         <div class="flex items-center gap-4">
@@ -286,19 +299,55 @@
                         </p>
                     @endif
 
-                    <div class="flex items-center gap-4 mt-6">
-                        <button
-                            class="bg-gradient-to-r from-primary to-primary-container px-10 py-4 rounded-full flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 shadow-[0_0_20px_rgba(224,141,255,0.2)]">
-                            <span class="material-symbols-outlined text-on-primary-container"
-                                style="font-variation-settings: 'FILL' 1;">play_arrow</span>
-                            <span
-                                class="text-on-primary-container font-black uppercase tracking-widest text-sm">Regarder</span>
-                        </button>
+                    <div class="flex flex-wrap items-center gap-4 mt-6">
+                        @if ($isSeries)
+                            @if (!empty($latestResume))
+                                <button type="button" id="resumeButton"
+                                    class="bg-gradient-to-r from-primary to-primary-container px-10 py-4 rounded-full flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 shadow-[0_0_20px_rgba(224,141,255,0.2)]">
+                                    <span class="material-symbols-outlined text-on-primary-container"
+                                        style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                                    <span
+                                        class="text-on-primary-container font-black uppercase tracking-widest text-sm">
+                                        Reprendre
+                                    </span>
+                                </button>
+                            @else
+                                <button type="button" id="watchFirstEpisodeButton"
+                                    class="bg-gradient-to-r from-primary to-primary-container px-10 py-4 rounded-full flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 shadow-[0_0_20px_rgba(224,141,255,0.2)]">
+                                    <span class="material-symbols-outlined text-on-primary-container"
+                                        style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                                    <span
+                                        class="text-on-primary-container font-black uppercase tracking-widest text-sm">
+                                        Regarder
+                                    </span>
+                                </button>
+                            @endif
+                        @else
+                            <button type="button" id="watchMovieButton"
+                                class="bg-gradient-to-r from-primary to-primary-container px-10 py-4 rounded-full flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 shadow-[0_0_20px_rgba(224,141,255,0.2)]">
+                                <span class="material-symbols-outlined text-on-primary-container"
+                                    style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                                <span class="text-on-primary-container font-black uppercase tracking-widest text-sm">
+                                    {{ !empty($latestResume) ? 'Reprendre' : 'Regarder' }}
+                                </span>
+                            </button>
+                        @endif
 
                         <button
                             class="w-14 h-14 rounded-full bg-surface-container-highest flex items-center justify-center hover:bg-surface-bright transition-colors">
                             <span class="material-symbols-outlined">add</span>
                         </button>
+
+                        @if ($isSeries && !empty($latestResume))
+                            <div class="text-sm text-on-surface-variant">
+                                S{{ $latestResume->season_id }} • E{{ $latestResume->episode_id }}
+                                • {{ $latestResume->progress_percent }}%
+                            </div>
+                        @elseif ($isMovie && !empty($latestResume))
+                            <div class="text-sm text-on-surface-variant">
+                                {{ $latestResume->progress_percent }}%
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -308,122 +357,119 @@
         <div class="max-w-7xl mx-auto px-6 md:px-12 mt-12 grid grid-cols-1 lg:grid-cols-12 gap-16">
             <!-- Left Column -->
             <div class="lg:col-span-8 flex flex-col gap-16">
-                <!-- Cast -->
-                {{-- <section>
-                    <div class="flex items-center justify-between mb-8">
-                        <h2 class="text-2xl font-bold tracking-tight">Main Cast</h2>
-                        <button
-                            class="text-primary text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-8 transition-all">
-                            View All
-                        </button>
-                    </div>
 
-                    <div class="flex gap-6 overflow-x-auto pb-4 hide-scrollbar">
-                        @foreach ($cast as $person)
-                            <div class="flex-shrink-0 group cursor-pointer w-24">
-                                <div
-                                    class="w-24 h-24 rounded-full overflow-hidden mb-3 border-2 border-transparent group-hover:border-primary transition-all">
-                                    <img class="w-full h-full object-cover" src="{{ $person['image'] }}"
-                                        alt="{{ $person['name'] }}">
-                                </div>
-                                <p class="text-xs font-bold text-center group-hover:text-primary transition-colors">
-                                    {{ $person['name'] }}</p>
-                                <p class="text-[10px] text-on-surface-variant text-center uppercase tracking-tighter">
-                                    {{ $person['role'] }}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                </section> --}}
-
-                <!-- Episodes -->
+                {{-- Bloc options de lecture --}}
                 <section>
                     <div class="mb-8 space-y-4">
                         <div class="flex items-center justify-between gap-4">
-                            <h2 class="text-2xl font-bold tracking-tight shrink-0">Episodes</h2>
+                            <h2 class="text-2xl font-bold tracking-tight shrink-0">
+                                {{ $isSeries ? 'Episodes' : 'Lecture' }}
+                            </h2>
                         </div>
 
-                        <!-- Ligne saisons -->
-                        <div class="flex flex-wrap gap-2">
-                            @for ($i = 1; $i <= $seasonCount; $i++)
-                                <a href="{{ request()->fullUrlWithQuery(['saison' => $i, 'lang' => $lang]) }}"
-                                    class="px-5 py-3 rounded-full text-sm font-bold tracking-widest uppercase transition-all border
-            {{ (int) $saison === $i
-                ? 'bg-primary text-black border-primary shadow-[0_0_20px_rgba(224,141,255,0.35)]'
-                : 'bg-surface-container-highest text-white border-white/10 hover:bg-surface-bright hover:border-primary/40' }}">
-                                    Saison {{ $i }}
-                                </a>
-                            @endfor
-                        </div>
+                        {{-- Ligne saisons uniquement pour les séries --}}
+                        @if ($isSeries)
+                            <div class="flex flex-wrap gap-2">
+                                @for ($i = 1; $i <= $seasonCount; $i++)
+                                    <a href="{{ request()->fullUrlWithQuery(['saison' => $i, 'lang' => $lang]) }}"
+                                        class="px-5 py-3 rounded-full text-sm font-bold tracking-widest uppercase transition-all border
+                            {{ (int) $saison === $i
+                                ? 'bg-primary text-black border-primary shadow-[0_0_20px_rgba(224,141,255,0.35)]'
+                                : 'bg-surface-container-highest text-white border-white/10 hover:bg-surface-bright hover:border-primary/40' }}">
+                                        Saison {{ $i }}
+                                    </a>
+                                @endfor
+                            </div>
+                        @endif
 
-                        <!-- Ligne langue -->
+                        {{-- Ligne langue pour films ET séries --}}
                         <div class="flex">
                             <div
                                 class="flex gap-1 p-1 rounded-full bg-surface-container-highest border border-white/10 w-fit">
-                                <a href="{{ request()->fullUrlWithQuery(['saison' => $saison, 'lang' => 'fr']) }}"
+                                <a href="{{ $isSeries
+                                    ? request()->fullUrlWithQuery(['saison' => $saison, 'lang' => 'fr'])
+                                    : request()->fullUrlWithQuery(['lang' => 'fr']) }}"
                                     class="px-5 py-3 rounded-full text-sm font-bold tracking-widest uppercase transition-all whitespace-nowrap
-                    {{ $lang === 'fr'
-                        ? 'bg-primary text-black shadow-[0_0_20px_rgba(224,141,255,0.35)]'
-                        : 'text-white hover:bg-white/5' }}">
+                        {{ $lang === 'fr'
+                            ? 'bg-primary text-black shadow-[0_0_20px_rgba(224,141,255,0.35)]'
+                            : 'text-white hover:bg-white/5' }}">
                                     VF
                                 </a>
 
-                                <a href="{{ request()->fullUrlWithQuery(['saison' => $saison, 'lang' => 'vo']) }}"
+                                <a href="{{ $isSeries
+                                    ? request()->fullUrlWithQuery(['saison' => $saison, 'lang' => 'vo'])
+                                    : request()->fullUrlWithQuery(['lang' => 'vo']) }}"
                                     class="px-5 py-3 rounded-full text-sm font-bold tracking-widest uppercase transition-all whitespace-nowrap
-                    {{ $lang === 'vo'
-                        ? 'bg-primary text-black shadow-[0_0_20px_rgba(224,141,255,0.35)]'
-                        : 'text-white hover:bg-white/5' }}">
+                        {{ $lang === 'vo'
+                            ? 'bg-primary text-black shadow-[0_0_20px_rgba(224,141,255,0.35)]'
+                            : 'text-white hover:bg-white/5' }}">
                                     VO / MULTI
                                 </a>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-2">
-                        @foreach ($responseSaison as $key => $episode)
+                    {{-- Liste des épisodes uniquement pour les séries --}}
+                    @if ($isSeries)
+                        <div class="flex flex-col gap-2">
                             @php
-                                $episodeNumber = Arr::get($episode, 'episode');
-                                $link = Arr::get($result, $lang . '.' . $saison . '.' . $episodeNumber . '.url');
+                                $progressMap = $progressMap ?? [];
                             @endphp
 
-                            <div class="group flex flex-col md:flex-row items-start md:items-center gap-6 p-4 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer"
-                                onclick="openPlayerByEpisode(@js($episode['name']), @js($link), {{ $loop->index }})">
-                                <span
-                                    class="text-2xl font-black text-outline-variant group-hover:text-primary transition-colors font-headline">
-                                    {{ $episode['episode'] }}
-                                </span>
+                            @foreach ($responseSaison as $key => $episode)
+                                @php
+                                    $episodeNumber = Arr::get($episode, 'episode');
+                                    $link = Arr::get($result, $lang . '.' . $saison . '.' . $episodeNumber . '.url');
+                                @endphp
 
-                                <div
-                                    class="relative w-full md:w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0">
-                                    <img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                        src="{{ $episode['poster'] }}" alt="{{ $episode['name'] }}">
+                                <div class="group flex flex-col md:flex-row items-start md:items-center gap-6 p-4 rounded-xl hover:bg-surface-container-low transition-all cursor-pointer"
+                                    onclick="openPlayerByEpisode(@js($episode['name']), @js($link), {{ $loop->index }})">
+                                    <span
+                                        class="text-2xl font-black text-outline-variant group-hover:text-primary transition-colors font-headline">
+                                        {{ $episode['episode'] }}
+                                    </span>
+
                                     <div
-                                        class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <span class="material-symbols-outlined text-on-surface text-4xl"
-                                            style="font-variation-settings: 'FILL' 1;">play_circle</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col gap-1 flex-grow w-full">
-                                    <h3 class="text-lg font-bold group-hover:text-primary transition-colors">
-                                        {{ $episode['name'] }}
-                                    </h3>
-                                    <p class="text-sm text-on-surface-variant line-clamp-2 md:line-clamp-1">
-                                        {{ $episode['overview'] }}
-                                    </p>
-
-                                    <div class="flex items-center gap-4 mt-1">
-                                        <span class="text-[10px] font-bold uppercase tracking-widest text-outline">
-                                            {{ $episode['runtime']['human'] }}
-                                        </span>
-
+                                        class="relative w-full md:w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0">
+                                        <img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                            src="{{ $episode['poster'] }}" alt="{{ $episode['name'] }}">
                                         <div
-                                            class="h-1 flex-grow max-w-[100px] bg-surface-container-highest rounded-full overflow-hidden">
+                                            class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span class="material-symbols-outlined text-on-surface text-4xl"
+                                                style="font-variation-settings: 'FILL' 1;">play_circle</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-1 flex-grow w-full">
+                                        <h3 class="text-lg font-bold group-hover:text-primary transition-colors">
+                                            {{ $episode['name'] }}
+                                        </h3>
+                                        <p class="text-sm text-on-surface-variant line-clamp-2 md:line-clamp-1">
+                                            {{ $episode['overview'] }}
+                                        </p>
+
+                                        <div class="flex items-center gap-4 mt-1">
+                                            <span class="text-[10px] font-bold uppercase tracking-widest text-outline">
+                                                {{ $episode['runtime']['human'] }}
+                                            </span>
+
+                                            @php
+                                                $episodeProgress =
+                                                    (int) ($progressMap[$saison . '|' . $episode['episode']] ?? 0);
+                                            @endphp
+
+                                            <div
+                                                class="h-1 flex-grow max-w-[100px] bg-surface-container-highest rounded-full overflow-hidden">
+                                                <div class="h-full bg-white rounded-full transition-all duration-300"
+                                                    style="width: {{ max(0, min(100, $episodeProgress)) }}%">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
-                    </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </section>
             </div>
 
@@ -436,7 +482,8 @@
                     </div>
 
                     <div>
-                        <h4 class="text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-3">Descriptions</h4>
+                        <h4 class="text-[10px] font-bold uppercase tracking-[0.2em] text-outline mb-3">Descriptions
+                        </h4>
                         <p class="text-on-surface font-medium">
                             {{ Arr::get($response, 'overview', 'No description available.') }}</p>
                     </div>
@@ -486,31 +533,28 @@
     <!-- BottomNavBar -->
     <nav
         class="fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-4 pb-4 bg-neutral-950/80 backdrop-blur-2xl z-50 rounded-t-3xl md:hidden">
-        <div
-            class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-200 transition-all cursor-pointer">
-            <span class="material-symbols-outlined mb-1">home</span>
-            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase">Home</span>
-        </div>
-
-        <div
-            class="flex flex-col items-center justify-center text-fuchsia-400 bg-fuchsia-500/10 rounded-full px-4 py-1 transition-all cursor-pointer scale-110">
-            <span class="material-symbols-outlined mb-1"
-                style="font-variation-settings: 'FILL' 1;">movie_filter</span>
-            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase">Originals</span>
-        </div>
-
-        <div
-            class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-200 transition-all cursor-pointer">
-            <span class="material-symbols-outlined mb-1">download</span>
-            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase">Downloads</span>
-        </div>
-
-        <div
-            class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-200 transition-all cursor-pointer">
-            <span class="material-symbols-outlined mb-1">person</span>
-            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase">Profile</span>
-        </div>
+        <a class="flex flex-col items-center justify-center text-neutral-500 bg-fuchsia-500/10 rounded-full px-4 py-1 active:scale-110 duration-200"
+            href="{{ route('alocine') }}">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Home</span>
+        </a>
+        <a class="flex flex-col items-center justify-center  text-fuchsia-400 hover:text-neutral-200 transition-all"
+            href="{{ route('catalog') }}">
+            <span class="material-symbols-outlined">movie_filter</span>
+            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Catalogue</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-200 transition-all"
+            href="{{ route('series.history') }}">
+            <span class="material-symbols-outlined">history</span>
+            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Historique</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-neutral-500 hover:text-neutral-200 transition-all"
+            href="#">
+            <span class="material-symbols-outlined">person</span>
+            <span class="font-body text-[10px] font-bold tracking-[0.05em] uppercase mt-1">Profile</span>
+        </a>
     </nav>
+
     <div id="playerModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm">
         <div class="flex min-h-screen items-center justify-center p-4 md:p-8">
             <div id="playerBox"
@@ -581,278 +625,390 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-
     @php
-    $jsEpisodes = collect($responseSaison)
-        ->map(function ($episode) use ($result, $lang, $saison) {
-            $episodeNumber = Arr::get($episode, 'episode');
+        $jsEpisodes = $isSeries
+            ? collect($responseSaison)
+                ->map(function ($episode) use ($result, $lang, $saison) {
+                    $episodeNumber = Arr::get($episode, 'episode');
 
-            return [
-                'id' => Arr::get($episode, 'id'),
-                'episode' => $episodeNumber,
-                'title' => Arr::get($episode, 'name'),
-                'url' => Arr::get($result, $lang . '.' . $saison . '.' . $episodeNumber . '.url'),
-            ];
-        })
-        ->values();
-@endphp
-
+                    return [
+                        'id' => Arr::get($episode, 'episode'),
+                        'season_id' => (int) $saison,
+                        'episode' => $episodeNumber,
+                        'title' => Arr::get($episode, 'name'),
+                        'poster' => Arr::get($episode, 'poster'),
+                        'url' => Arr::get($result, $lang . '.' . $saison . '.' . $episodeNumber . '.url'),
+                    ];
+                })
+                ->values()
+            : collect();
+    @endphp
 
     <script>
         window.playerEpisodes = @json($jsEpisodes);
     </script>
 
+
     <script>
-let hlsInstance = null;
-let currentEpisodeIndex = null;
-let nextEpisodeTimeout = null;
-let nextEpisodeInterval = null;
-let nextEpisodeRemaining = 5;
-let nextEpisodeOverlayShown = false;
+        window.seriesProgressUrl = @js(route('series.progress.store'));
+        window.csrfToken = @js(csrf_token());
+        window.isSeries = @json($isSeries);
+        window.isMovie = @json($isMovie);
 
-const NEXT_EPISODE_TRIGGER_KEY = 'next_episode_trigger_seconds';
+        window.currentSeries = {
+            series_id: @json($response['id'] ?? null),
+            series_title: @json($response['title'] ?? ''),
+            episode_id: @json($isMovie ? 1 : null),
+            episode_title: @json($isMovie ? $response['title'] ?? '' : ''),
+            poster: @json(Arr::get($response, 'posters.small')),
+            season_id: @json($isMovie ? 1 : $saison),
+        };
 
-function getNextEpisodeTriggerSeconds() {
-    const saved = localStorage.getItem(NEXT_EPISODE_TRIGGER_KEY);
-    const value = parseInt(saved ?? '10', 10);
+        window.movieUrl = @json($movieUrl);
+    </script>
 
-    if (Number.isNaN(value)) return 10;
-    return Math.max(0, Math.min(300, value));
-}
+    @php
+        $seriesResumesMap = collect($seriesResumes ?? collect())
+            ->mapWithKeys(function ($resume) {
+                return [
+                    $resume->season_id . '|' . $resume->episode_id => [
+                        'season_id' => $resume->season_id,
+                        'episode_id' => $resume->episode_id,
+                        'current_time' => $resume->current_time,
+                        'progress_percent' => $resume->progress_percent,
+                    ],
+                ];
+            })
+            ->toArray();
+    @endphp
 
-function setNextEpisodeTriggerSeconds(value) {
-    const normalized = Math.max(0, Math.min(300, parseInt(value || '10', 10)));
-    localStorage.setItem(NEXT_EPISODE_TRIGGER_KEY, String(normalized));
+    <script>
+        window.seriesResumesMap = @json($seriesResumesMap);
+    </script>
 
-    const input = document.getElementById('nextEpisodeTriggerSeconds');
-    if (input) {
-        input.value = normalized;
-    }
+    <script>
+        let hlsInstance = null;
+        let currentEpisodeIndex = null;
+        let nextEpisodeTimeout = null;
+        let nextEpisodeInterval = null;
+        let nextEpisodeRemaining = 5;
+        let nextEpisodeOverlayShown = false;
 
-    return normalized;
-}
+        const NEXT_EPISODE_TRIGGER_KEY = 'next_episode_trigger_seconds';
 
-function getNextEpisode() {
-    if (!Array.isArray(window.playerEpisodes)) return null;
-    if (currentEpisodeIndex === null) return null;
+        function getNextEpisodeTriggerSeconds() {
+            const saved = localStorage.getItem(NEXT_EPISODE_TRIGGER_KEY);
+            const value = parseInt(saved ?? '10', 10);
 
-    return window.playerEpisodes[currentEpisodeIndex + 1] ?? null;
-}
-
-function hideNextEpisodeOverlay() {
-    const overlay = document.getElementById('nextEpisodeOverlay');
-    const countdown = document.getElementById('nextEpisodeCountdown');
-
-    if (overlay) overlay.classList.add('hidden');
-    if (countdown) countdown.textContent = '5';
-
-    if (nextEpisodeTimeout) {
-        clearTimeout(nextEpisodeTimeout);
-        nextEpisodeTimeout = null;
-    }
-
-    if (nextEpisodeInterval) {
-        clearInterval(nextEpisodeInterval);
-        nextEpisodeInterval = null;
-    }
-
-    nextEpisodeRemaining = 5;
-}
-
-function showNextEpisodeOverlay() {
-    const overlay = document.getElementById('nextEpisodeOverlay');
-    const title = document.getElementById('nextEpisodeTitle');
-    const countdown = document.getElementById('nextEpisodeCountdown');
-
-    const nextEpisode = getNextEpisode();
-
-    if (!overlay || !nextEpisode || !nextEpisode.url) {
-        return;
-    }
-
-    title.textContent = nextEpisode.title || 'Épisode suivant';
-    countdown.textContent = '5';
-    overlay.classList.remove('hidden');
-
-    nextEpisodeRemaining = 5;
-
-    nextEpisodeInterval = setInterval(() => {
-        nextEpisodeRemaining--;
-
-        if (countdown) {
-            countdown.textContent = String(Math.max(0, nextEpisodeRemaining));
+            if (Number.isNaN(value)) return 10;
+            return Math.max(0, Math.min(300, value));
         }
-    }, 1000);
 
-    nextEpisodeTimeout = setTimeout(() => {
-        playNextEpisode();
-    }, 5000);
-}
+        function setNextEpisodeTriggerSeconds(value) {
+            const normalized = Math.max(0, Math.min(300, parseInt(value || '10', 10)));
+            localStorage.setItem(NEXT_EPISODE_TRIGGER_KEY, String(normalized));
 
-function openPlayerByEpisode(title, m3u8Url, episodeIndex = null) {
-    currentEpisodeIndex = episodeIndex;
-    nextEpisodeOverlayShown = false;
+            const input = document.getElementById('nextEpisodeTriggerSeconds');
+            if (input) {
+                input.value = normalized;
+            }
 
-    const episodeData = Array.isArray(window.playerEpisodes)
-        ? window.playerEpisodes[episodeIndex] ?? null
-        : null;
+            return normalized;
+        }
 
-    if (episodeData) {
-        window.currentSeries.episode_id = episodeData.id ?? null;
-        window.currentSeries.episode_title = episodeData.title ?? title ?? '';
-    }
+        function getNextEpisode() {
+            if (window.isMovie) return null;
+            if (!Array.isArray(window.playerEpisodes)) return null;
+            if (currentEpisodeIndex === null) return null;
 
-    openPlayer(title, m3u8Url);
-}
+            return window.playerEpisodes[currentEpisodeIndex + 1] ?? null;
+        }
 
-function openPlayer(title, m3u8Url) {
-    const modal = document.getElementById('playerModal');
-    const video = document.getElementById('episodePlayer');
-    const playerTitle = document.getElementById('playerTitle');
+        function hideNextEpisodeOverlay() {
+            const overlay = document.getElementById('nextEpisodeOverlay');
+            const countdown = document.getElementById('nextEpisodeCountdown');
 
-    if (!modal || !video || !m3u8Url) {
-        console.warn('Player impossible à ouvrir', { title, m3u8Url });
-        return;
-    }
+            if (overlay) overlay.classList.add('hidden');
+            if (countdown) countdown.textContent = '5';
 
-    hideNextEpisodeOverlay();
-    nextEpisodeOverlayShown = false;
+            if (nextEpisodeTimeout) {
+                clearTimeout(nextEpisodeTimeout);
+                nextEpisodeTimeout = null;
+            }
 
-    playerTitle.textContent = title || 'Lecture';
-    modal.classList.remove('hidden');
-    document.body.classList.add('overflow-hidden');
+            if (nextEpisodeInterval) {
+                clearInterval(nextEpisodeInterval);
+                nextEpisodeInterval = null;
+            }
 
-    if (hlsInstance) {
-        hlsInstance.destroy();
-        hlsInstance = null;
-    }
+            nextEpisodeRemaining = 5;
+        }
 
-    video.pause();
-    video.removeAttribute('src');
-    video.load();
+        function showNextEpisodeOverlay() {
+            const overlay = document.getElementById('nextEpisodeOverlay');
+            const title = document.getElementById('nextEpisodeTitle');
+            const countdown = document.getElementById('nextEpisodeCountdown');
 
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = m3u8Url;
-    } else if (window.Hls && Hls.isSupported()) {
-        hlsInstance = new Hls();
-        hlsInstance.loadSource(m3u8Url);
-        hlsInstance.attachMedia(video);
-    } else {
-        alert('Votre navigateur ne supporte pas la lecture HLS.');
-        return;
-    }
+            const nextEpisode = getNextEpisode();
 
-    video.play().catch((error) => {
-        console.warn('Lecture auto bloquée par le navigateur', error);
-    });
-}
+            if (!overlay || !nextEpisode || !nextEpisode.url) {
+                return;
+            }
 
-function playNextEpisode() {
-    const nextEpisode = getNextEpisode();
+            title.textContent = nextEpisode.title || 'Épisode suivant';
+            countdown.textContent = '5';
+            overlay.classList.remove('hidden');
 
-    if (!nextEpisode || !nextEpisode.url) {
-        hideNextEpisodeOverlay();
-        return;
-    }
+            nextEpisodeRemaining = 5;
 
-    currentEpisodeIndex = currentEpisodeIndex + 1;
-    hideNextEpisodeOverlay();
-    nextEpisodeOverlayShown = false;
-    openPlayer(nextEpisode.title, nextEpisode.url);
-}
+            nextEpisodeInterval = setInterval(() => {
+                nextEpisodeRemaining--;
 
-function closePlayer() {
-    const modal = document.getElementById('playerModal');
-    const video = document.getElementById('episodePlayer');
+                if (countdown) {
+                    countdown.textContent = String(Math.max(0, nextEpisodeRemaining));
+                }
+            }, 1000);
 
-    hideNextEpisodeOverlay();
-    nextEpisodeOverlayShown = false;
+            nextEpisodeTimeout = setTimeout(() => {
+                playNextEpisode();
+            }, 5000);
+        }
 
-    if (hlsInstance) {
-        hlsInstance.destroy();
-        hlsInstance = null;
-    }
+        function openPlayerByEpisode(title, m3u8Url, episodeIndex = null) {
+            currentEpisodeIndex = episodeIndex;
+            nextEpisodeOverlayShown = false;
 
-    if (video) {
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-    }
+            const episodeData = Array.isArray(window.playerEpisodes) ?
+                window.playerEpisodes[episodeIndex] ?? null :
+                null;
 
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+            if (episodeData) {
+                window.currentSeries.episode_id = episodeData.id ?? null;
+                window.currentSeries.episode_title = episodeData.title ?? title ?? '';
+                window.currentSeries.poster = episodeData.poster ?? window.currentSeries.poster ?? null;
+                window.currentSeries.season_id = episodeData.season_id ?? window.currentSeries.season_id ?? null;
+            }
 
-    document.body.classList.remove('overflow-hidden');
-}
+            const seasonId = Number(window.currentSeries.season_id || 0);
+            const episodeId = Number(window.currentSeries.episode_id || 0);
+            const resumeKey = `${seasonId}|${episodeId}`;
+            const resume = window.seriesResumesMap?.[resumeKey] ?? null;
 
-document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-        closePlayer();
-    }
-});
+            console.log('resumeKey', resumeKey);
+            console.log('resume', resume);
+            console.log('available keys', Object.keys(window.seriesResumesMap || {}));
+            const modal = document.getElementById('playerModal');
+            const video = document.getElementById('episodePlayer');
+            const playerTitle = document.getElementById('playerTitle');
 
-document.addEventListener('DOMContentLoaded', function () {
-    const modal = document.getElementById('playerModal');
-    const box = document.getElementById('playerBox');
-    const video = document.getElementById('episodePlayer');
-    const playNextBtn = document.getElementById('playNextEpisodeNow');
-    const cancelNextBtn = document.getElementById('cancelNextEpisode');
-    const triggerInput = document.getElementById('nextEpisodeTriggerSeconds');
+            if (!modal || !video || !m3u8Url) {
+                console.warn('Player impossible à ouvrir', {
+                    title,
+                    m3u8Url
+                });
+                return;
+            }
 
-    if (triggerInput) {
-        triggerInput.value = getNextEpisodeTriggerSeconds();
+            hideNextEpisodeOverlay();
+            nextEpisodeOverlayShown = false;
 
-        triggerInput.addEventListener('change', function () {
-            setNextEpisodeTriggerSeconds(this.value);
-        });
-    }
+            playerTitle.textContent = title || 'Lecture';
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
 
-    if (modal && box) {
-        modal.addEventListener('click', function (e) {
-            if (!box.contains(e.target)) {
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+
+            const applyResumeAndPlay = () => {
+                const savedTime = Number(resume?.current_time || 0);
+
+                if (savedTime > 0 && Number.isFinite(video.duration) && savedTime < video.duration - 10) {
+                    video.currentTime = savedTime;
+                }
+
+                video.play().catch((error) => {
+                    console.warn('Lecture auto bloquée par le navigateur', error);
+                });
+            };
+
+            if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = m3u8Url;
+                video.addEventListener('loadedmetadata', function onLoaded() {
+                    applyResumeAndPlay();
+                    video.removeEventListener('loadedmetadata', onLoaded);
+                });
+            } else if (window.Hls && Hls.isSupported()) {
+                hlsInstance = new Hls();
+                hlsInstance.loadSource(m3u8Url);
+                hlsInstance.attachMedia(video);
+
+                video.addEventListener('loadedmetadata', function onLoaded() {
+                    applyResumeAndPlay();
+                    video.removeEventListener('loadedmetadata', onLoaded);
+                });
+            } else {
+                alert('Votre navigateur ne supporte pas la lecture HLS.');
+                return;
+            }
+        }
+
+        function openPlayer(title, m3u8Url, resumeTime = 0) {
+            const modal = document.getElementById('playerModal');
+            const video = document.getElementById('episodePlayer');
+            const playerTitle = document.getElementById('playerTitle');
+
+            if (!modal || !video || !m3u8Url) {
+                console.warn('Player impossible à ouvrir', {
+                    title,
+                    m3u8Url
+                });
+                return;
+            }
+
+            hideNextEpisodeOverlay();
+            nextEpisodeOverlayShown = false;
+
+            playerTitle.textContent = title || 'Lecture';
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+
+            if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = m3u8Url;
+            } else if (window.Hls && Hls.isSupported()) {
+                hlsInstance = new Hls();
+                hlsInstance.loadSource(m3u8Url);
+                hlsInstance.attachMedia(video);
+            } else {
+                alert('Votre navigateur ne supporte pas la lecture HLS.');
+                return;
+            }
+
+            video.play().catch((error) => {
+                console.warn('Lecture auto bloquée par le navigateur', error);
+            });
+        }
+
+        function playNextEpisode() {
+            const nextEpisode = getNextEpisode();
+
+            if (!nextEpisode || !nextEpisode.url) {
+                hideNextEpisodeOverlay();
+                return;
+            }
+
+            currentEpisodeIndex = currentEpisodeIndex + 1;
+            hideNextEpisodeOverlay();
+            nextEpisodeOverlayShown = false;
+            openPlayer(nextEpisode.title, nextEpisode.url);
+        }
+
+        function closePlayer() {
+            const modal = document.getElementById('playerModal');
+            const video = document.getElementById('episodePlayer');
+
+            hideNextEpisodeOverlay();
+            nextEpisodeOverlayShown = false;
+
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            if (video) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+            }
+
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
                 closePlayer();
             }
         });
-    }
 
-    if (video) {
-        video.addEventListener('timeupdate', function () {
-            const nextEpisode = getNextEpisode();
-            if (!nextEpisode || !nextEpisode.url) return;
-            if (nextEpisodeOverlayShown) return;
-            if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('playerModal');
+            const box = document.getElementById('playerBox');
+            const video = document.getElementById('episodePlayer');
+            const playNextBtn = document.getElementById('playNextEpisodeNow');
+            const cancelNextBtn = document.getElementById('cancelNextEpisode');
+            const triggerInput = document.getElementById('nextEpisodeTriggerSeconds');
 
-            const remaining = video.duration - video.currentTime;
-            const triggerSeconds = getNextEpisodeTriggerSeconds();
+            if (triggerInput) {
+                triggerInput.value = getNextEpisodeTriggerSeconds();
 
-            if (remaining <= triggerSeconds) {
-                nextEpisodeOverlayShown = true;
-                showNextEpisodeOverlay();
+                triggerInput.addEventListener('change', function() {
+                    setNextEpisodeTriggerSeconds(this.value);
+                });
+            }
+
+            if (modal && box) {
+                modal.addEventListener('click', function(e) {
+                    if (!box.contains(e.target)) {
+                        closePlayer();
+                    }
+                });
+            }
+
+            if (video) {
+                video.addEventListener('timeupdate', function() {
+                    const nextEpisode = getNextEpisode();
+                    if (!nextEpisode || !nextEpisode.url) return;
+                    if (nextEpisodeOverlayShown) return;
+                    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+
+                    const remaining = video.duration - video.currentTime;
+                    const triggerSeconds = getNextEpisodeTriggerSeconds();
+
+                    if (remaining <= triggerSeconds) {
+                        nextEpisodeOverlayShown = true;
+                        showNextEpisodeOverlay();
+                    }
+                });
+
+                video.addEventListener('ended', function() {
+                    if (!nextEpisodeOverlayShown) {
+                        nextEpisodeOverlayShown = true;
+                        showNextEpisodeOverlay();
+                    }
+                });
+            }
+
+            if (playNextBtn) {
+                playNextBtn.addEventListener('click', function() {
+                    playNextEpisode();
+                });
+            }
+
+            if (cancelNextBtn) {
+                cancelNextBtn.addEventListener('click', function() {
+                    hideNextEpisodeOverlay();
+                });
             }
         });
-
-        video.addEventListener('ended', function () {
-            if (!nextEpisodeOverlayShown) {
-                nextEpisodeOverlayShown = true;
-                showNextEpisodeOverlay();
-            }
-        });
-    }
-
-    if (playNextBtn) {
-        playNextBtn.addEventListener('click', function () {
-            playNextEpisode();
-        });
-    }
-
-    if (cancelNextBtn) {
-        cancelNextBtn.addEventListener('click', function () {
-            hideNextEpisodeOverlay();
-        });
-    }
-});
-</script>
+    </script>
 
     <script>
         window.resultToCopy = @json($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -912,50 +1068,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     </script>
 
-<script>
-    window.seriesProgressUrl = @js(route('series.progress.store'));
-    window.csrfToken = @js(csrf_token());
 
-    window.currentSeries = {
-        series_id: @json($serie['id'] ?? null),
-        series_title: @json($serie['title'] ?? ''),
-        episode_id: @json($episode['id'] ?? null),
-        episode_title: @json($episode['title'] ?? ''),
-        poster: @json($serie['small_poster_path'] ?? null),
-    };
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('episodePlayer');
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const video = document.getElementById('episodePlayer');
-    if (!video || !window.currentSeries?.series_id) return;
+            if (!video || !window.currentSeries?.series_id) return;
 
-    let lastSavedAt = 0;
-    const SAVE_EVERY_SECONDS = 120;
+            let lastSavedAt = 0;
+            const SAVE_EVERY_SECONDS = 120;
 
-    async function saveProgress(force = false) {
-        if (!video.duration || isNaN(video.duration)) return;
-        if (!window.currentSeries?.episode_id) return;
+            let saveInFlight = false;
+            let lastSaveKey = null;
+            let lastSaveSentAt = 0;
+            const MIN_SAVE_GAP_MS = 1500;
 
-        const currentTime = Math.floor(video.currentTime || 0);
-        const duration = Math.floor(video.duration || 0);
+            function buildSavePayload(eventType = 'progress') {
+                if (!window.currentSeries?.series_id) return null;
+                if (!window.currentSeries?.episode_id) return null;
+                if (!video.duration || isNaN(video.duration)) return null;
 
-        if (!force && (currentTime - lastSavedAt) < SAVE_EVERY_SECONDS) {
-            return;
-        }
+                const currentTime = Math.floor(video.currentTime || 0);
+                const duration = Math.floor(video.duration || 0);
 
-        lastSavedAt = currentTime;
-
-        try {
-            const response = await fetch(window.seriesProgressUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': window.csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify({
+                return {
                     series_id: window.currentSeries.series_id,
                     series_title: window.currentSeries.series_title,
                     episode_id: window.currentSeries.episode_id,
@@ -963,70 +1099,268 @@ document.addEventListener('DOMContentLoaded', function () {
                     current_time: currentTime,
                     duration: duration,
                     poster: window.currentSeries.poster,
-                })
+                    season_id: window.currentSeries.season_id ?? null,
+                    event_type: eventType,
+                    media_type: window.isMovie ? 'movie' : 'series',
+                };
+            }
+
+            async function saveProgress(force = false, eventType = 'progress') {
+                const payload = buildSavePayload(eventType);
+                if (!payload) return;
+
+                const currentTime = payload.current_time;
+                const nowMs = Date.now();
+
+                if (!force && (currentTime - lastSavedAt) < SAVE_EVERY_SECONDS) {
+                    return;
+                }
+                console.log('Tentative de sauvegarde progression', payload);
+                const saveKey = [
+                    payload.series_id,
+                    payload.episode_id,
+                    payload.current_time,
+                    payload.duration,
+                    payload.media_type,
+                    payload.event_type
+                ].join('|');
+
+                if (saveInFlight && saveKey === lastSaveKey) {
+                    return;
+                }
+
+                if (saveKey === lastSaveKey && (nowMs - lastSaveSentAt) < MIN_SAVE_GAP_MS) {
+                    return;
+                }
+
+                saveInFlight = true;
+                lastSaveKey = saveKey;
+                lastSaveSentAt = nowMs;
+                lastSavedAt = currentTime;
+
+                try {
+                    const response = await fetch(window.seriesProgressUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': window.csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const text = await response.text();
+                        console.error('Erreur HTTP sauvegarde progression', response.status, text);
+                    }
+                } catch (error) {
+                    console.error('Erreur sauvegarde progression', error);
+                } finally {
+                    saveInFlight = false;
+                }
+            }
+
+            video.addEventListener('timeupdate', function() {
+                saveProgress(false, 'progress');
             });
 
-            if (!response.ok) {
-                console.error('Erreur HTTP sauvegarde progression', response.status);
+            video.addEventListener('pause', function() {
+                saveProgress(true, 'pause');
+            });
+
+            video.addEventListener('ended', function() {
+                saveProgress(true, 'ended');
+            });
+
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    saveProgress(true, 'hidden');
+                }
+            });
+
+            window.saveCurrentEpisodeStart = function() {
+                saveProgress(true, 'start');
+            };
+        });
+    </script>
+    {{-- <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('episodePlayer');
+            const resume = @json($latestResume ?? null);
+
+            if (!video || !resume) return;
+
+            const savedEpisodeId = Number(resume.episode_id || 0);
+
+            if (!savedEpisodeId || !Array.isArray(window.playerEpisodes)) return;
+
+            const foundIndex = window.playerEpisodes.findIndex(ep => Number(ep.id || 0) === savedEpisodeId);
+            if (foundIndex === -1) return;
+
+            const savedEpisode = window.playerEpisodes[foundIndex];
+            if (!savedEpisode?.url) return;
+
+            window.currentSeries.episode_id = savedEpisode.id ?? null;
+            window.currentSeries.episode_title = savedEpisode.title ?? '';
+            window.currentSeries.poster = savedEpisode.poster ?? window.currentSeries.poster ?? null;
+            window.currentSeries.season_id = savedEpisode.season_id ?? window.currentSeries.season_id ?? null;
+
+            openPlayerByEpisode(savedEpisode.title, savedEpisode.url, foundIndex);
+
+            video.addEventListener('loadedmetadata', function onLoaded() {
+                const savedTime = Number(resume.current_time || 0);
+
+                if (savedTime > 0 && savedTime < video.duration - 10) {
+                    video.currentTime = savedTime;
+                }
+
+                video.removeEventListener('loadedmetadata', onLoaded);
+            });
+        });
+    </script> --}}
+
+   <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const resumeButton = document.getElementById('resumeButton');
+    const latestResume = @json($latestResume ?? null);
+
+    if (!resumeButton || !latestResume) return;
+
+    resumeButton.addEventListener('click', function() {
+        if (window.isMovie) {
+            if (!window.movieUrl) {
+                console.warn('Aucune URL film trouvée');
+                return;
             }
-        } catch (error) {
-            console.error('Erreur sauvegarde progression', error);
+
+            openPlayer(window.currentSeries.series_title, window.movieUrl);
+
+            const video = document.getElementById('episodePlayer');
+            if (!video) return;
+
+            video.addEventListener('loadedmetadata', function onLoaded() {
+                try {
+                    let time = Number(latestResume.current_time || 0);
+
+                    if (!Number.isFinite(time) || time < 0) {
+                        time = 0;
+                    }
+
+                    if (Number.isFinite(video.duration) && video.duration > 0) {
+                        if (time > 0 && time < video.duration - 10) {
+                            video.currentTime = time;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Resume impossible', e);
+                }
+
+                video.removeEventListener('loadedmetadata', onLoaded);
+            });
+
+            return;
         }
-    }
 
-    video.addEventListener('timeupdate', function () {
-        saveProgress(false);
-    });
+        const seasonId = Number(latestResume.season_id || 0);
+        const episodeId = Number(latestResume.episode_id || 0);
 
-    video.addEventListener('pause', function () {
-        saveProgress(true);
-    });
-
-    video.addEventListener('ended', function () {
-        saveProgress(true);
-    });
-
-    document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'hidden') {
-            saveProgress(true);
+        if (seasonId !== Number(@json($saison))) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('saison', seasonId);
+            window.location.href = url.toString();
+            return;
         }
+
+        const foundIndex = window.playerEpisodes.findIndex(ep =>
+            Number(ep.id || 0) === episodeId &&
+            Number(ep.season_id || 0) === seasonId
+        );
+
+        if (foundIndex === -1) return;
+
+        const savedEpisode = window.playerEpisodes[foundIndex];
+        if (!savedEpisode?.url) return;
+
+        window.currentSeries.episode_id = savedEpisode.id ?? null;
+        window.currentSeries.episode_title = savedEpisode.title ?? '';
+        window.currentSeries.poster = savedEpisode.poster ?? window.currentSeries.poster ?? null;
+        window.currentSeries.season_id = savedEpisode.season_id ?? window.currentSeries.season_id ?? null;
+
+        openPlayerByEpisode(savedEpisode.title, savedEpisode.url, foundIndex);
+
+        const video = document.getElementById('episodePlayer');
+        if (!video) return;
+
+        video.addEventListener('loadedmetadata', function onLoaded() {
+            const savedTime = Number(latestResume.current_time || 0);
+
+            if (
+                Number.isFinite(savedTime) &&
+                savedTime > 0 &&
+                Number.isFinite(video.duration) &&
+                savedTime < video.duration - 10
+            ) {
+                video.currentTime = savedTime;
+            }
+
+            video.removeEventListener('loadedmetadata', onLoaded);
+        });
     });
 });
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const video = document.getElementById('episodePlayer');
-    const resume = @json(auth()->check() ? auth()->user()->series_resume : null);
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const watchMovieButton = document.getElementById('watchMovieButton');
+    const latestResume = @json($latestResume ?? null);
 
-    if (!video || !resume) return;
+    if (!watchMovieButton || !window.isMovie) return;
 
-    const savedEpisodeId = Number(resume.episode_id || 0);
-
-    if (!savedEpisodeId || !Array.isArray(window.playerEpisodes)) return;
-
-    const foundIndex = window.playerEpisodes.findIndex(ep => Number(ep.id || 0) === savedEpisodeId);
-    if (foundIndex === -1) return;
-
-    const savedEpisode = window.playerEpisodes[foundIndex];
-    if (!savedEpisode?.url) return;
-
-    window.currentSeries.episode_id = savedEpisode.id ?? null;
-    window.currentSeries.episode_title = savedEpisode.title ?? '';
-
-    openPlayerByEpisode(savedEpisode.title, savedEpisode.url, foundIndex);
-
-    video.addEventListener('loadedmetadata', function onLoaded() {
-        const savedTime = Number(resume.current_time || 0);
-
-        if (savedTime > 0 && savedTime < video.duration - 10) {
-            video.currentTime = savedTime;
+    watchMovieButton.addEventListener('click', function() {
+        if (!window.movieUrl) {
+            console.warn('Aucune URL film trouvée');
+            return;
         }
 
-        video.removeEventListener('loadedmetadata', onLoaded);
+        openPlayer(window.currentSeries.series_title, window.movieUrl);
+
+        const video = document.getElementById('episodePlayer');
+        if (!video) return;
+
+        video.addEventListener('loadedmetadata', function onLoaded() {
+            const savedTime = Number(latestResume?.current_time || 0);
+
+            if (
+                Number.isFinite(savedTime) &&
+                savedTime > 0 &&
+                Number.isFinite(video.duration) &&
+                savedTime < video.duration - 10
+            ) {
+                video.currentTime = savedTime;
+            }
+
+            video.removeEventListener('loadedmetadata', onLoaded);
+        });
     });
 });
 </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const watchFirstEpisodeButton = document.getElementById('watchFirstEpisodeButton');
+            if (!watchFirstEpisodeButton || !window.isSeries) return;
+
+            watchFirstEpisodeButton.addEventListener('click', function() {
+                const firstEpisode = Array.isArray(window.playerEpisodes) ? window.playerEpisodes[0] ??
+                    null : null;
+                if (!firstEpisode?.url) return;
+
+                openPlayerByEpisode(firstEpisode.title, firstEpisode.url, 0);
+            });
+        });
+    </script>
+
 
 </body>
 

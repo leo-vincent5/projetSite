@@ -97,63 +97,76 @@ public function create()
 {
     return view('family-apartment.bookings.create');
 }
-
 public function store(Request $request)
 {
-    $validated = $request->validate([
-        'title' => ['nullable', 'string', 'max:255'],
-        'name' => ['required', 'string', 'max:255'],
-        'start_date' => ['required', 'date'],
-        'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-        'status' => ['required', 'in:confirmed,pending,cancelled'],
-        'guests_count' => ['nullable', 'integer', 'min:1'],
-        'description' => ['nullable', 'string'],
-        'practical_info' => ['nullable', 'string', 'max:255'],
-        'reminder_note' => ['nullable', 'string'],
+    $data = $request->validate([
+        'series_id' => ['required', 'integer'],
+        'series_title' => ['required', 'string', 'max:255'],
+        'episode_id' => ['nullable', 'integer'],
+        'episode_title' => ['nullable', 'string', 'max:255'],
+        'current_time' => ['required', 'integer', 'min:0'],
+        'duration' => ['nullable', 'integer', 'min:0'],
+        'poster' => ['nullable', 'string', 'max:2000'],
     ]);
 
-    $startDate = Carbon::parse($validated['start_date'])->toDateString();
-    $endDate = Carbon::parse($validated['end_date'])->toDateString();
+    $user = $request->user();
 
-   $force = $request->boolean('force');
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Utilisateur non connecté',
+        ], 401);
+    }
 
-$overlappingBooking = Booking::query()
-    ->where('status', '!=', 'cancelled')
-    ->whereDate('start_date', '<=', $endDate)
-    ->whereDate('end_date', '>=', $startDate)
-    ->first();
+    $duration = (int) ($data['duration'] ?? 0);
+    $currentTime = (int) $data['current_time'];
 
-if ($overlappingBooking && !$force) {
+    $progressPercent = $duration > 0
+        ? min(100, (int) round(($currentTime / $duration) * 100))
+        : 0;
 
-    $conflictStart = \Carbon\Carbon::parse($overlappingBooking->start_date)->locale('fr');
-    $conflictEnd = \Carbon\Carbon::parse($overlappingBooking->end_date)->locale('fr');
+    $resumes = collect($user->series_resumes ?? []);
 
-    $periodLabel = $conflictStart->translatedFormat('d M Y') . ' - ' . $conflictEnd->translatedFormat('d M Y');
+    $isFinished = $duration > 0 && $currentTime >= max(0, $duration - 30);
 
-    return back()
-        ->withInput()
-        ->with([
-            'conflict' => true,
-            'conflict_message' =>
-                "⚠️ Cette période chevauche celle de {$overlappingBooking->name} ({$periodLabel}). Confirmer ?"
-        ]);
-}
+    $sameEntry = function ($item) use ($data) {
+        return (int) ($item['series_id'] ?? 0) === (int) $data['series_id']
+            && (int) ($item['episode_id'] ?? 0) === (int) ($data['episode_id'] ?? 0);
+    };
 
-    Booking::create([
-        'title' => $validated['title'] ?: null,
-        'name' => $validated['name'],
-        'start_date' => $startDate,
-        'end_date' => $endDate,
-        'status' => $validated['status'],
-        'guests_count' => $validated['guests_count'] ?? null,
-        'description' => $validated['description'] ?? null,
-        'practical_info' => $validated['practical_info'] ?? null,
-        'reminder_note' => $validated['reminder_note'] ?? null,
+    if ($isFinished) {
+        $resumes = $resumes->reject($sameEntry)->values();
+    } else {
+        $newEntry = [
+            'series_id' => $data['series_id'],
+            'series_title' => $data['series_title'],
+            'episode_id' => $data['episode_id'] ?? null,
+            'episode_title' => $data['episode_title'] ?? null,
+            'current_time' => $currentTime,
+            'duration' => $duration,
+            'progress_percent' => $progressPercent,
+            'poster' => $data['poster'] ?? null,
+            'updated_at' => now()->toDateTimeString(),
+        ];
+
+        $resumes = $resumes
+            ->reject($sameEntry)
+            ->push($newEntry)
+            ->sortByDesc(function ($item) {
+                return strtotime($item['updated_at'] ?? '1970-01-01 00:00:00');
+            })
+            ->values();
+    }
+
+    $user->update([
+        'series_resumes' => $resumes->all(),
     ]);
 
-    return redirect()
-        ->route('family-apartment.dashboard')
-        ->with('success', 'Le séjour a bien été enregistré.');
+    return response()->json([
+        'success' => true,
+        'message' => $isFinished ? 'Épisode retiré de la reprise' : 'Progression sauvegardée',
+        'series_resumes' => $user->fresh()->series_resumes,
+    ]);
 }
 
 

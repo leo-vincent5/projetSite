@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+          'series_resume',
     ];
 
     /**
@@ -42,7 +43,6 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
             'audio_resume' => 'array',
             'series_resume' => 'array',
-
     ];
 
     public function circles()

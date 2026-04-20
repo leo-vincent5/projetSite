@@ -129,9 +129,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/searchSeries', [AudioPlayerController::class, 'search'])->name('series.search');
     Route::get('/aloserie',[AudioPlayerController::class, 'aloserie'])->name('aloserie');
+    Route::get('/alofilm',[AudioPlayerController::class, 'alofilm'])->name('alofilm');
+    Route::get('/alocine',[AudioPlayerController::class, 'alocine'])->name('alocine');
     Route::get('/oneserie/{id}',[AudioPlayerController::class, 'oneserie'])->name('oneserie');
     Route::post('series/progress', [AudioPlayerController::class, 'store'])->name('series.progress.store');
-
+    Route::get('/series/history', [AudioPlayerController::class, 'history'])->name('series.history');
 
     Route::get('/comments/my', [CommentController::class, 'my'])->name('comments.my');
     Route::delete('/circles/{circle}/members/{user}',[CircleController::class, 'removeMember'])->name('circles.members.remove');
