@@ -331,6 +331,10 @@
                                     {{ !empty($latestResume) ? 'Reprendre' : 'Regarder' }}
                                 </span>
                             </button>
+                            <a href="vlc://{{ $movieUrl }}"
+                                class="px-5 py-3 rounded-xl bg-orange-500 text-black font-bold uppercase tracking-widest text-sm">
+                                Ouvrir dans VLC
+                            </a>
                         @endif
 
                         <button
@@ -348,6 +352,11 @@
                                 {{ $latestResume->progress_percent }}%
                             </div>
                         @endif
+
+                        <button type="button" id="createWatchPartyBtn"
+                            class="bg-white/10 px-6 py-3 rounded-full font-bold">
+                            Partager la lecture
+                        </button>
                     </div>
                 </div>
             </div>
@@ -381,6 +390,8 @@
                                 @endfor
                             </div>
                         @endif
+
+
 
                         {{-- Ligne langue pour films ET séries --}}
                         <div class="flex">
@@ -564,14 +575,20 @@
                     aria-label="Fermer le lecteur">
                     <span class="material-symbols-outlined text-3xl">close</span>
                 </button>
-
                 <div
-                    class="flex items-center justify-between px-4 py-3 bg-surface-container-low border-b border-white/10">
-                    <h3 id="playerTitle" class="text-sm md:text-base font-bold truncate pr-12">Lecture</h3>
+                    class="flex items-center justify-between gap-4 px-4 py-3 pr-20 bg-surface-container-low border-b border-white/10">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <h3 id="playerTitle" class="text-sm md:text-base font-bold truncate">Lecture</h3>
+                    </div>
+
+                    <select id="audioTrackSelect"
+                        class="hidden shrink-0 w-[130px] rounded-xl bg-black/70 border border-white/20 px-3 py-2 text-sm text-white focus:border-primary focus:ring-0">
+                    </select>
                 </div>
 
                 <div class="relative bg-black aspect-video w-full">
-                    <video id="episodePlayer" class="w-full h-full" controls playsinline></video>
+                    <video id="episodePlayer" class="w-full h-full" controls playsinline webkit-playsinline
+                        preload="auto"></video>
 
                     <!-- Overlay épisode suivant -->
                     <div id="nextEpisodeOverlay"
@@ -648,6 +665,56 @@
         window.playerEpisodes = @json($jsEpisodes);
     </script>
 
+    <script>
+        window.watchPartyCreateUrl = @js(route('watch-party.create'));
+        window.csrfToken = @js(csrf_token());
+    </script>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btn = document.getElementById('createWatchPartyBtn');
+            if (!btn) return;
+
+            btn.addEventListener('click', async function() {
+                try {
+                    const payload = {
+                        media_id: window.currentSeries?.series_id,
+                        media_type: window.isMovie ? 'movie' : 'series',
+                        season_id: window.isMovie ? null : (window.currentSeries?.season_id ??
+                            null),
+                        episode_id: window.currentSeries?.episode_id ?? null,
+                        title: window.currentSeries?.episode_title || window.currentSeries
+                            ?.series_title || 'Lecture',
+                        source_url: window.currentPlayerUrl || window.movieUrl || null,
+                    };
+
+                    const response = await fetch(window.watchPartyCreateUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': window.csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.url) {
+                        throw new Error('Création impossible');
+                    }
+
+                    await navigator.clipboard.writeText(data.url);
+                    alert('Lien de lecture synchronisée copié');
+                } catch (e) {
+                    console.error(e);
+                    alert('Impossible de créer le lien');
+                }
+            });
+        });
+    </script>
 
     <script>
         window.seriesProgressUrl = @js(route('series.progress.store'));
@@ -793,78 +860,76 @@
             const episodeId = Number(window.currentSeries.episode_id || 0);
             const resumeKey = `${seasonId}|${episodeId}`;
             const resume = window.seriesResumesMap?.[resumeKey] ?? null;
+            const resumeTime = Number(resume?.current_time || 0);
 
-            console.log('resumeKey', resumeKey);
-            console.log('resume', resume);
-            console.log('available keys', Object.keys(window.seriesResumesMap || {}));
-            const modal = document.getElementById('playerModal');
-            const video = document.getElementById('episodePlayer');
-            const playerTitle = document.getElementById('playerTitle');
+            openPlayer(title, m3u8Url, resumeTime);
+        }
 
-            if (!modal || !video || !m3u8Url) {
-                console.warn('Player impossible à ouvrir', {
-                    title,
-                    m3u8Url
-                });
+
+        function setupAudioTrackSelector() {
+            const select = document.getElementById('audioTrackSelect');
+
+            if (!select || !hlsInstance) return;
+
+            const tracks = hlsInstance.audioTracks || [];
+
+            console.log('Audio tracks HLS:', tracks);
+
+            if (tracks.length <= 1) {
+                select.classList.add('hidden');
+                select.innerHTML = '';
                 return;
             }
 
-            hideNextEpisodeOverlay();
-            nextEpisodeOverlayShown = false;
+            const currentTrack = hlsInstance.audioTrack;
 
-            playerTitle.textContent = title || 'Lecture';
-            modal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
+            select.innerHTML = '';
 
-            if (hlsInstance) {
-                hlsInstance.destroy();
-                hlsInstance = null;
-            }
+            tracks.forEach((track, index) => {
+                const option = document.createElement('option');
+                option.value = index;
 
-            video.pause();
-            video.removeAttribute('src');
-            video.load();
+                const rawLang = (track.lang || track.name || '').toLowerCase();
 
-            const applyResumeAndPlay = () => {
-                const savedTime = Number(resume?.current_time || 0);
+                let label = track.name || track.lang || `Audio ${index + 1}`;
 
-                if (savedTime > 0 && Number.isFinite(video.duration) && savedTime < video.duration - 10) {
-                    video.currentTime = savedTime;
+                if (rawLang === 'fra' || rawLang === 'fr' || rawLang.includes('français')) {
+                    label = 'FR';
                 }
 
-                video.play().catch((error) => {
-                    console.warn('Lecture auto bloquée par le navigateur', error);
-                });
+                if (rawLang === 'eng' || rawLang === 'en' || rawLang.includes('english')) {
+                    label = 'EN';
+                }
+
+                option.textContent = label;
+                select.appendChild(option);
+            });
+
+            select.value = currentTrack >= 0 ? currentTrack : 0;
+            select.classList.remove('hidden');
+
+            select.onchange = function() {
+                const index = Number(this.value);
+                hlsInstance.audioTrack = index;
+
+                const selectedTrack = tracks[index];
+                const langToSave = selectedTrack?.lang || selectedTrack?.name || '';
+
+                if (langToSave) {
+                    localStorage.setItem('preferred_audio_lang', langToSave);
+                }
             };
-
-            if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = m3u8Url;
-                video.addEventListener('loadedmetadata', function onLoaded() {
-                    applyResumeAndPlay();
-                    video.removeEventListener('loadedmetadata', onLoaded);
-                });
-            } else if (window.Hls && Hls.isSupported()) {
-                hlsInstance = new Hls();
-                hlsInstance.loadSource(m3u8Url);
-                hlsInstance.attachMedia(video);
-
-                video.addEventListener('loadedmetadata', function onLoaded() {
-                    applyResumeAndPlay();
-                    video.removeEventListener('loadedmetadata', onLoaded);
-                });
-            } else {
-                alert('Votre navigateur ne supporte pas la lecture HLS.');
-                return;
-            }
         }
 
         function openPlayer(title, m3u8Url, resumeTime = 0) {
+            console.log("ici ??????")
+            window.currentPlayerUrl = m3u8Url;
             const modal = document.getElementById('playerModal');
             const video = document.getElementById('episodePlayer');
             const playerTitle = document.getElementById('playerTitle');
 
             if (!modal || !video || !m3u8Url) {
-                console.warn('Player impossible à ouvrir', {
+                debugPlayer('Player impossible à ouvrir', {
                     title,
                     m3u8Url
                 });
@@ -882,26 +947,128 @@
                 hlsInstance.destroy();
                 hlsInstance = null;
             }
+            console.log("LAAAAAA ,,s")
 
             video.pause();
             video.removeAttribute('src');
             video.load();
 
-            if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            const safeResumeTime = Number.isFinite(Number(resumeTime)) ? Number(resumeTime) : 0;
+
+            const applyResume = () => {
+                const duration = Number(video.duration || 0);
+
+                debugPlayer('loadedmetadata', {
+                    duration,
+                    currentSrc: video.currentSrc,
+                    resumeTime: safeResumeTime
+                });
+
+                if (
+                    safeResumeTime > 0 &&
+                    Number.isFinite(duration) &&
+                    duration > 0 &&
+                    safeResumeTime < duration - 10
+                ) {
+                    try {
+                        video.currentTime = safeResumeTime;
+                        debugPlayer('resume appliqué', {
+                            resumeTime: safeResumeTime
+                        });
+                    } catch (e) {
+                        debugPlayer('Impossible d’appliquer le resumeTime', {
+                            error: String(e)
+                        });
+                    }
+                }
+            };
+
+            video.addEventListener('loadedmetadata', applyResume, {
+                once: true
+            });
+
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+            if ((isSafari || isIOS) && video.canPlayType('application/vnd.apple.mpegurl')) {
+
+                debugPlayer('mode natif Safari/iPhone', m3u8Url);
+                console.log("lalalalalalalala");
+
                 video.src = m3u8Url;
+                video.load();
+
+                video.play().catch(e => {
+                    debugPlayer('play bloqué', e.message);
+                });
+
+                return;
+
             } else if (window.Hls && Hls.isSupported()) {
-                hlsInstance = new Hls();
+
+                debugPlayer('mode hls.js', {
+                    url: m3u8Url
+                });
+
+                fetch(m3u8Url)
+                    .then(r => r.text())
+                    .then(text => {
+                        debugPlayer('master content', text.substring(0, 1000));
+                    })
+                    .catch(e => {
+                        debugPlayer('fetch master error', {
+                            message: e.message
+                        });
+                    });
+
+                console.log("coucouuu");
+
+                hlsInstance = new Hls({
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                });
+
                 hlsInstance.loadSource(m3u8Url);
                 hlsInstance.attachMedia(video);
+
+                hlsInstance.on(Hls.Events.MANIFEST_LOADED, function(event, data) {
+                    console.log('manifest loaded', data);
+                });
+
+                hlsInstance.on(Hls.Events.AUDIO_TRACKS_UPDATED, function(event, data) {
+                    console.log('audio tracks updated', data);
+                    setupAudioTrackSelector();
+                });
+
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+
+                    console.log('manifest parsed', data);
+                    console.log('audio tracks direct', hlsInstance.audioTracks);
+
+                    setTimeout(() => {
+                        setupAudioTrackSelector();
+                    }, 500);
+                });
+
             } else {
+
+                debugPlayer('HLS non supporté');
                 alert('Votre navigateur ne supporte pas la lecture HLS.');
                 return;
             }
 
-            video.play().catch((error) => {
-                console.warn('Lecture auto bloquée par le navigateur', error);
-            });
+            const playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise
+                    .then(() => debugPlayer('play() OK'))
+                    .catch((error) => {
+                        debugPlayer('Lecture bloquée', {
+                            error: error?.message || String(error)
+                        });
+                    });
+            }
         }
+
 
         function playNextEpisode() {
             const nextEpisode = getNextEpisode();
@@ -923,6 +1090,12 @@
 
             hideNextEpisodeOverlay();
             nextEpisodeOverlayShown = false;
+
+            const audioSelect = document.getElementById('audioTrackSelect');
+            if (audioSelect) {
+                audioSelect.classList.add('hidden');
+                audioSelect.innerHTML = '';
+            }
 
             if (hlsInstance) {
                 hlsInstance.destroy();
@@ -1184,167 +1357,61 @@
             };
         });
     </script>
-    {{-- <script>
+
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const video = document.getElementById('episodePlayer');
-            const resume = @json($latestResume ?? null);
+            const resumeButton = document.getElementById('resumeButton');
+            const latestResume = @json($latestResume ?? null);
 
-            if (!video || !resume) return;
+            if (!resumeButton || !latestResume || !window.isSeries) return;
 
-            const savedEpisodeId = Number(resume.episode_id || 0);
+            resumeButton.addEventListener('click', function() {
+                const seasonId = Number(latestResume.season_id || 0);
+                const episodeId = Number(latestResume.episode_id || 0);
 
-            if (!savedEpisodeId || !Array.isArray(window.playerEpisodes)) return;
-
-            const foundIndex = window.playerEpisodes.findIndex(ep => Number(ep.id || 0) === savedEpisodeId);
-            if (foundIndex === -1) return;
-
-            const savedEpisode = window.playerEpisodes[foundIndex];
-            if (!savedEpisode?.url) return;
-
-            window.currentSeries.episode_id = savedEpisode.id ?? null;
-            window.currentSeries.episode_title = savedEpisode.title ?? '';
-            window.currentSeries.poster = savedEpisode.poster ?? window.currentSeries.poster ?? null;
-            window.currentSeries.season_id = savedEpisode.season_id ?? window.currentSeries.season_id ?? null;
-
-            openPlayerByEpisode(savedEpisode.title, savedEpisode.url, foundIndex);
-
-            video.addEventListener('loadedmetadata', function onLoaded() {
-                const savedTime = Number(resume.current_time || 0);
-
-                if (savedTime > 0 && savedTime < video.duration - 10) {
-                    video.currentTime = savedTime;
+                if (seasonId !== Number(@json($saison))) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('saison', seasonId);
+                    window.location.href = url.toString();
+                    return;
                 }
 
-                video.removeEventListener('loadedmetadata', onLoaded);
+                const foundIndex = window.playerEpisodes.findIndex(ep =>
+                    Number(ep.id || 0) === episodeId &&
+                    Number(ep.season_id || 0) === seasonId
+                );
+
+                if (foundIndex === -1) return;
+
+                const savedEpisode = window.playerEpisodes[foundIndex];
+                if (!savedEpisode?.url) return;
+
+                openPlayerByEpisode(savedEpisode.title, savedEpisode.url, foundIndex);
             });
         });
-    </script> --}}
+    </script>
 
-   <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const resumeButton = document.getElementById('resumeButton');
-    const latestResume = @json($latestResume ?? null);
 
-    if (!resumeButton || !latestResume) return;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const watchMovieButton = document.getElementById('watchMovieButton');
+            const latestResume = @json($latestResume ?? null);
 
-    resumeButton.addEventListener('click', function() {
-        if (window.isMovie) {
-            if (!window.movieUrl) {
-                console.warn('Aucune URL film trouvée');
-                return;
-            }
+            if (!watchMovieButton || !window.isMovie) return;
 
-            openPlayer(window.currentSeries.series_title, window.movieUrl);
-
-            const video = document.getElementById('episodePlayer');
-            if (!video) return;
-
-            video.addEventListener('loadedmetadata', function onLoaded() {
-                try {
-                    let time = Number(latestResume.current_time || 0);
-
-                    if (!Number.isFinite(time) || time < 0) {
-                        time = 0;
-                    }
-
-                    if (Number.isFinite(video.duration) && video.duration > 0) {
-                        if (time > 0 && time < video.duration - 10) {
-                            video.currentTime = time;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Resume impossible', e);
+            watchMovieButton.addEventListener('click', function() {
+                if (!window.movieUrl) {
+                    debugPlayer('Aucune URL film trouvée');
+                    return;
                 }
 
-                video.removeEventListener('loadedmetadata', onLoaded);
+                const resumeTime = Number(latestResume?.current_time || 0);
+                openPlayer(window.currentSeries.series_title, window.movieUrl, resumeTime);
             });
-
-            return;
-        }
-
-        const seasonId = Number(latestResume.season_id || 0);
-        const episodeId = Number(latestResume.episode_id || 0);
-
-        if (seasonId !== Number(@json($saison))) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('saison', seasonId);
-            window.location.href = url.toString();
-            return;
-        }
-
-        const foundIndex = window.playerEpisodes.findIndex(ep =>
-            Number(ep.id || 0) === episodeId &&
-            Number(ep.season_id || 0) === seasonId
-        );
-
-        if (foundIndex === -1) return;
-
-        const savedEpisode = window.playerEpisodes[foundIndex];
-        if (!savedEpisode?.url) return;
-
-        window.currentSeries.episode_id = savedEpisode.id ?? null;
-        window.currentSeries.episode_title = savedEpisode.title ?? '';
-        window.currentSeries.poster = savedEpisode.poster ?? window.currentSeries.poster ?? null;
-        window.currentSeries.season_id = savedEpisode.season_id ?? window.currentSeries.season_id ?? null;
-
-        openPlayerByEpisode(savedEpisode.title, savedEpisode.url, foundIndex);
-
-        const video = document.getElementById('episodePlayer');
-        if (!video) return;
-
-        video.addEventListener('loadedmetadata', function onLoaded() {
-            const savedTime = Number(latestResume.current_time || 0);
-
-            if (
-                Number.isFinite(savedTime) &&
-                savedTime > 0 &&
-                Number.isFinite(video.duration) &&
-                savedTime < video.duration - 10
-            ) {
-                video.currentTime = savedTime;
-            }
-
-            video.removeEventListener('loadedmetadata', onLoaded);
         });
-    });
-});
-</script>
+    </script>
 
-  <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const watchMovieButton = document.getElementById('watchMovieButton');
-    const latestResume = @json($latestResume ?? null);
 
-    if (!watchMovieButton || !window.isMovie) return;
-
-    watchMovieButton.addEventListener('click', function() {
-        if (!window.movieUrl) {
-            console.warn('Aucune URL film trouvée');
-            return;
-        }
-
-        openPlayer(window.currentSeries.series_title, window.movieUrl);
-
-        const video = document.getElementById('episodePlayer');
-        if (!video) return;
-
-        video.addEventListener('loadedmetadata', function onLoaded() {
-            const savedTime = Number(latestResume?.current_time || 0);
-
-            if (
-                Number.isFinite(savedTime) &&
-                savedTime > 0 &&
-                Number.isFinite(video.duration) &&
-                savedTime < video.duration - 10
-            ) {
-                video.currentTime = savedTime;
-            }
-
-            video.removeEventListener('loadedmetadata', onLoaded);
-        });
-    });
-});
-</script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1360,7 +1427,33 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     </script>
+    {{-- <div id="playerDebugBox"
+        class="fixed bottom-24 left-4 right-4 z-[9999] hidden rounded-xl bg-black/90 text-white text-xs p-4 border border-white/20 max-h-52 overflow-auto">
+    </div> --}}
 
+    <script>
+        function debugPlayer(message, data = null) {
+            const box = document.getElementById('playerDebugBox');
+            if (!box) return;
+
+            box.classList.remove('hidden');
+
+            let line = message;
+            if (data) {
+                try {
+                    line += ' : ' + JSON.stringify(data);
+                } catch (e) {
+                    line += ' : [data non sérialisable]';
+                }
+            }
+
+            const div = document.createElement('div');
+            div.className = 'mb-2 border-b border-white/10 pb-2';
+            div.textContent = line;
+
+            box.prepend(div);
+        }
+    </script>
 
 </body>
 

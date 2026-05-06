@@ -393,9 +393,9 @@ $bookIds = collect($tracks)
 
     $responseResponse = Http::get("https://api.purstream.art/api/v1/media/{$id}/sheet");
     $responseJson = $responseResponse->json();
-
+    
     $response = $responseJson['data']['items'] ?? [];
-
+   
     if (!$response) {
         abort(404, 'Média introuvable');
     }
@@ -428,12 +428,14 @@ $bookIds = collect($tracks)
         ];
 
         foreach (($response['urls'] ?? []) as $item) {
-            $parsedLang = str_contains(strtoupper($item['name'] ?? ''), 'VF') || str_contains(strtoupper($item['name'] ?? ''), 'FR')
+            $parsedLang = str_contains(strtoupper($item['name'] ?? ''), 'VF') || str_contains(strtoupper($item['name'] ?? ''), 'VF')
                 ? 'fr'
                 : 'vo';
 
             $result[$parsedLang][] = $item;
         }
+
+
 
         return view('oneserie', compact(
             'response',
@@ -451,7 +453,7 @@ $bookIds = collect($tracks)
     $responseSaisonJson = $responseSaisonResponse->json();
 
     $responseSaison = $responseSaisonJson['data']['items']['episodes'] ?? [];
-
+   
     $parsed = collect($response['urls'] ?? [])
         ->map(function ($item) {
             if (preg_match('/S(\d+)\/E(\d+)/', $item['url'] ?? '', $m)) {
@@ -479,13 +481,13 @@ $bookIds = collect($tracks)
     ];
 
     foreach ($parsed as $item) {
-        $parsedLang = str_contains(strtoupper($item['name']), 'VF') || str_contains(strtoupper($item['name']), 'FR')
+        $parsedLang = str_contains(strtoupper($item['name']), 'VF') || str_contains(strtoupper($item['name']), 'VF')
             ? 'fr'
             : 'vo';
 
         $result[$parsedLang][$item['season']][$item['episode']] = $item;
     }
-
+  
     return view('oneserie', compact(
         'responseSaison',
         'response',
@@ -919,6 +921,8 @@ public function alocine()
     $allFeatured = collect(array_merge($featuredSeries, $featuredMovies))->values()->all();
     $hero = !empty($allFeatured) ? $allFeatured[array_rand($allFeatured)] : null;
 
+
+    
     return view('series', [
         'series' => $series,
         'featuredSeries' => $featuredSeries,

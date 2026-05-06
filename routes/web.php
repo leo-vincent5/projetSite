@@ -12,6 +12,7 @@ use App\Http\Controllers\CircleController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FamilyApartmentController;
 use App\Http\Controllers\FamilyApartmentTipController;
+use App\Http\Controllers\WatchPartyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -144,6 +145,20 @@ Route::middleware('auth')->group(function () {
 
 
     Route::get('/catalog',[AudioPlayerController::class, 'catalog'])->name('catalog');
+
+
+
+    Route::post('/watch-party/create', [WatchPartyController::class, 'create'])
+    ->name('watch-party.create');
+
+    Route::get('/watch-party/{token}', [WatchPartyController::class, 'show'])
+        ->name('watch-party.show');
+
+    Route::post('/watch-party/{token}/sync', [WatchPartyController::class, 'sync'])
+        ->name('watch-party.sync');
+
+    Route::get('/watch-party/{token}/state', [WatchPartyController::class, 'state'])
+        ->name('watch-party.state');
 
 
     // récupère les commentaires visibles pour un circle+book, selon ton avancement
