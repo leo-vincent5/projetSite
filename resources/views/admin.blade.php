@@ -28,6 +28,7 @@
         </div>
         <hr>
         <div class="globalRes">
+           
             @foreach($paniers as $panier)
 
                 <div class="row">
@@ -35,7 +36,7 @@
                         <img src="/{{ $panier->photo()->first()->name_notbuy}}" style="width: 5vw;">
                     </div>
                     <div class="col">
-                        {{$panier->user()->first()->email}}
+                       
                     </div>
                     <div class="col">
                         {{$panier->created_at}}

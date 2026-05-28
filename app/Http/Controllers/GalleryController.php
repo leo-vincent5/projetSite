@@ -337,25 +337,42 @@ class GalleryController extends Controller
         return view("panier")->with(['paniers' => $paniers, 'packs' => $packs]);
     }
 
-    public function addPanierSpeed(Request $request){
-        $name = $request->photo_name;
-        $photo = Photo::query()->where('name','like',$name)->first();
+ public function addPanierSpeed(Request $request)
+{
+    $name = $request->photo_name;
 
-        $check  = Panier::query()->where('id_photo','=',$photo->id)->where('id_user','=',Auth::user()->id)->get();
+$photo = Photo::query()
+    ->whereRaw('LOWER(name_notbuy) = ?', [strtolower($name)])
+    ->first();
 
-        if (count($check) == 0){
-            $panier = new Panier();
-            $panier->id_user = Auth::user()->id;
-            $panier->id_photo = $photo->id;
-            $panier->save();
-             return "good";
-        } else {
-            foreach ($check as $item){
-                $item->delete();
-            }
-            return "delete";
-        }
+
+    if (!$photo) {
+        return response()->json([
+            'message' => 'Photo introuvable',
+            'photo_name' => $name,
+        ], 404);
     }
+
+    $check = Panier::query()
+        ->where('id_photo', '=', $photo->id)
+        ->where('id_user', '=', Auth::user()->id)
+        ->get();
+
+    if (count($check) == 0) {
+        $panier = new Panier();
+        $panier->id_user = Auth::user()->id;
+        $panier->id_photo = $photo->id;
+        $panier->save();
+
+        return "good";
+    }
+
+    foreach ($check as $item) {
+        $item->delete();
+    }
+
+    return "delete";
+}
     public function getPanier(){
         $paniers = Panier::query()->where('id_user','=',Auth::user()->id)->get();
 

@@ -90,9 +90,6 @@ Route::get('/testv2', function () {
 
 Route::get('/poney',[\App\Http\Controllers\PoneyController::class,'index'])->name('index');
 
-
-
-
 Route::get('/drive',[GalleryController::class,"drive"])->name('drive');
 Route::get('/phototherapie',[NewController::class,"phototherapie"])->name('phototherapie');
 
@@ -104,7 +101,6 @@ Route::get('/reservation_mariage',[NewController::class,"reservation_mariage"])-
 Route::post('/sendReservation',[NewController::class,"sendReservation"])->name('sendReservation');
 Route::get('/legal',[NewController::class,"legal"])->name('legal');
 Route::get('/cgv',[NewController::class,"cgv"])->name('cgv');
-
 
 Route::get('/galerie',[GalleryController::class,"index"])->name('gallery');
 Route::get('/galerie/{name}',[GalleryController::class,"souscat"])->name('under-galerie');
@@ -120,10 +116,7 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-
-
 Route::get('/share/audio', [AudioPlayerController::class, 'show'])->name('audio.share.show');
-
 Route::get('/invite/{token}', [CircleController::class, 'invite'])->name('circles.invite');
 
 Route::middleware('auth')->group(function () {
@@ -261,6 +254,19 @@ Route::middleware('auth')->group(function () {
 });
 
 });
+
+
+Route::get('/mentions-legales2026', function () {
+    return view('legal.mentions');
+})->name('mentions2026');
+
+Route::get('/cgv2026', function () {
+    return view('legal.cgv');
+})->name('cgv2026');
+
+Route::get('/confidentialite2026', function () {
+    return view('legal.confidentialite');
+})->name('confidentialite2026');
 
 Route::get('/telecharger-image/{repertoire}/{nomFichier}', [GalleryController::class,'telechargerImage'])->name('telecharger.image');
 Route::get('/download/{repertoire}', [GalleryController::class,'download'])->name('download');

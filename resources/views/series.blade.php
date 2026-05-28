@@ -189,7 +189,7 @@
             <a class="text-neutral-400 font-bold text-sm tracking-widest uppercase hover:text-fuchsia-300 transition-colors duration-300"
                 href="{{ route('catalog') }}">Découvrir</a>
             <a class="text-neutral-400 font-bold text-sm tracking-widest uppercase hover:text-fuchsia-300 transition-colors duration-300"
-                href="{{ route('history') }}">Historique</a>
+                href="{{ route('series.history') }}">Historique</a>
         </nav>
 
         <div class="flex items-center">

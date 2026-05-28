@@ -186,10 +186,14 @@
 
         <div class="flex items-center gap-6">
             <div class="hidden items-center gap-8 text-sm font-semibold uppercase tracking-widest md:flex">
-                <a href="{{ route('alocine') }}"
-                    class="text-[#adaaaa] transition-colors duration-300 hover:text-white">Home</a>
-                <a href="#" class="text-[#e08dff] transition-colors duration-300 hover:text-white">Catalog</a>
-                <a href="#" class="text-[#adaaaa] transition-colors duration-300 hover:text-white">Studio</a>
+                <nav class="hidden md:flex items-center gap-8">
+            <a class="text-neutral-400 font-bold text-sm tracking-widest uppercase hover:text-fuchsia-300 transition-colors duration-300" href="{{ route('alocine') }}">Accueil</a>
+            <a class="text-fuchsia-400 font-bold text-sm tracking-widest uppercase "
+                href="{{ route('catalog') }}">Découvrir</a>
+            <a class="text-neutral-400 font-bold text-sm tracking-widest uppercase hover:text-fuchsia-300 transition-colors duration-300"
+                href="{{ route('series.history') }}">Historique</a>
+        </nav>
+
             </div>
 
             <button type="button" id="openSearchModalBtn"
