@@ -114,36 +114,37 @@
     $(document).ready(function () {
 
         // ACHAT PACK
-        $(document).on("click", "#packBuy", function () {
+     $(document).on("click", "#packBuy", function () {
+    let tab = [];
 
-            let tableau = $(".addSpeed");
-            let tab = [];
+    $(".addSpeed").each(function () {
+        tab.push($(this).data("id"));
+    });
 
-            tableau.each(function () {
-                tab.push($(this).data("id"));
-            });
+    let cle = window.location.pathname.replace(/^\/galerie\//, "img/galerie/");
 
-            let cle = window.location.pathname;
-
-            $.ajax({
-                type: "POST",
-                url: "/add_pack",
-                data: {
-                    cle: cle,
-                    tab: tab
-                },
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function (result) {
-
-                    if (result === "good") {
-                        window.location.href = "/panier";
-                    }
-                }
-            });
-
-        });
+    $.ajax({
+        type: "POST",
+        url: "/add_pack",
+        data: {
+            cle: cle,
+            tab: tab
+        },
+        headers: {
+            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+        },
+        success: function (result) {
+            if (result === "good") {
+                window.location.href = "/panier";
+            } else {
+                console.log(result);
+            }
+        },
+        error: function (xhr) {
+            console.log(xhr.responseText);
+        }
+    });
+});
 
         // AJOUT RAPIDE PANIER
         $(document).on("click", ".addSpeed", function (event) {

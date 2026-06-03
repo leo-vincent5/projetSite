@@ -13,30 +13,34 @@ class NewController extends Controller
     public function reservation_mariage(Request $request){
         return view('mariage.reservation')->with(['forfait' => $request->input('forfait')]);
     }
-    public function sendReservation(Request $request){
-        $email = $request->input('email');
-        $telephone = $request->input('telephone');
-        $localisation = $request->input('localisation');
-        $message = $request->input('message');
-        $forfait = $request->input('forfait');
-        $capcha = $request->input('antir');
+  public function sendReservation(Request $request)
+{
+    $email = $request->input('email');
+    $telephone = $request->input('telephone');
+    $localisation = $request->input('localisation');
+    $message = $request->input('message');
+    $forfait = $request->input('forfait');
+    $capcha = $request->input('antir');
 
-        if ($capcha !== "photo"){
-            return redirect()->to(url()->previous() . '#error')->with("error", "Veuillez renseigner le champs capcha");
-        }
-
-        $newMariage = new Mariage();
-        $newMariage->telephone = $telephone;
-        $newMariage->message = $message;
-        $newMariage->localisation = $localisation;
-        $newMariage->email = $email;
-        $newMariage->forfait = $forfait;
-        $newMariage->save();
-
-        return redirect()->to(url()->previous() . '#success')->with("success", "Votre message a bien été envoyé, nous vous recontacterons des que possible ! ");
-
-
+    if ($capcha !== "photo") {
+        return redirect()->to(url()->previous() . '#error')
+            ->with("error", "Veuillez renseigner le champs capcha");
     }
+
+    $newMariage = new Mariage();
+    $newMariage->telephone = $telephone;
+    $newMariage->message = $message;
+    $newMariage->localisation = $localisation;
+    $newMariage->email = $email;
+    $newMariage->forfait = $forfait;
+    $newMariage->save();
+
+    Mail::to('leo.vincent5@gmail.com')
+        ->send(new sendMariage($newMariage));
+
+    return redirect()->to(url()->previous() . '#success')
+        ->with("success", "Votre message a bien été envoyé, nous vous recontacterons des que possible !");
+}
 
     public function help_price(){
         return view('help.price');

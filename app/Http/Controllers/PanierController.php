@@ -33,7 +33,6 @@ class PanierController extends Controller
        // dd($details);
         $id = $request->id_user;
         $panier_user  = Panier::query()->where('id_user','=',Auth::user()->id)->get();
-
         foreach ($panier_user as $panier )
         {
             $paiement = new Paiement();
@@ -44,13 +43,7 @@ class PanierController extends Controller
 
             $panier->delete();
         }
-
-
-
-        dd($panier_user);
-
-
-
+       return true;
 
     }
 }

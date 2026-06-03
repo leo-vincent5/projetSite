@@ -44,7 +44,7 @@
 
                     <div class="hidden items-center gap-3 md:flex">
 
-                        <a href="{{ url('/') }}"
+                        <a href="{{ url('/galerie') }}"
                             class="rounded-full px-4 py-2 text-sm font-semibold text-rose-100/80 transition hover:bg-white/10 hover:text-white">
                             Galeries
                         </a>

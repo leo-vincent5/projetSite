@@ -35,7 +35,7 @@
                     </div>
 
                     <div class="mt-3 text-5xl font-black text-amber-300">
-                        <span id="prixPanier">{{ count($paniers) * 3 }}</span>€
+                        <span id="prixPanier">{{ count($paniers) * 5 }}</span>€
                     </div>
 
                     <div class="mt-2 text-rose-100/70">
@@ -133,7 +133,7 @@
                         @endif
                     </b>
                     pour un montant de
-                    <b><span id="prixPanierText">{{ count($paniers) * 3 }}</span> €</b>.
+                    <b><span id="prixPanierText">{{ count($paniers) * 5 }}</span> €</b>.
                 </p>
             </div>
 
@@ -190,7 +190,7 @@
 
                             <div class="absolute bottom-0 left-0 right-0 p-5">
                                 <div class="inline-flex rounded-full bg-amber-300 px-4 py-2 text-sm font-black text-[#12070d]">
-                                    3€
+                                    5€
                                 </div>
                             </div>
                         </div>
@@ -337,14 +337,15 @@
                     });
 
                     return actions.order.create({
-                        purchase_units: [
-                            {
-                                amount: {
-                                    value: coucou * 3,
-                                }
-                            }
-                        ]
-                    });
+    purchase_units: [
+        {
+            amount: {
+                currency_code: "EUR",
+                value: (coucou * 5).toFixed(2),
+            }
+        }
+    ]
+});
                 },
 
                 onApprove: function (data, actions) {
@@ -434,7 +435,7 @@
                 let prix = parseInt($("#prixPanier").html()) || 0;
 
                 nb = Math.max(nb - 1, 0);
-                prix = Math.max(prix - 3, 0);
+                prix = Math.max(prix - 5, 0);
 
                 updateCartDisplay(nb, prix);
 

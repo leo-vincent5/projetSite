@@ -73,18 +73,33 @@ class GalleryController extends Controller
     public function souscat($name)
     {
 
-        $path = public_path('img/galerie/' . $name . '/');
-        $files = scandir($path);
-        return view("sousGalerie")->with(["files" => $files, "name" => $name]);
+      $path = public_path('img/galerie/' . $name . '/');
+
+$files = scandir($path);
+
+$files = array_diff($files, ['.', '..']);
+
+natsort($files);
+
+return view("sousGalerie")->with([
+    "files" => $files,
+    "name" => $name
+]);
     }
 
     public function admin()
     {
 
         if (Auth::user()->id == 1) {
-            $paniers = Panier::all();
-            $paiement = Paiement::all();
-            $messages = MessagePhoto::all();
+         $paniers = Panier::orderBy('created_at', 'desc')
+    ->limit(10)
+    ->get();
+            $paiement = Paiement::orderBy('created_at', 'desc')
+    ->limit(10)
+    ->get();
+            $messages = MessagePhoto::orderBy('created_at', 'desc')
+    ->limit(10)
+    ->get();
             return view("admin")->with(["paniers" => $paniers,"paiements" => $paiement, 'messages' => $messages ]);
         }
     }
@@ -373,37 +388,50 @@ $photo = Photo::query()
 
     return "delete";
 }
-    public function getPanier(){
-        $paniers = Panier::query()->where('id_user','=',Auth::user()->id)->get();
+    public function getPanier()
+{
+    $paniers = Panier::query()
+        ->where('id_user', '=', Auth::user()->id)
+        ->get();
 
+    $panierTempons = PanierTempon::query()
+        ->where('id_user', '=', Auth::user()->id)
+        ->get();
 
-        $panierTempons = PanierTempon::query()->where('id_user','=',Auth::user()->id)->get();
-        foreach ($panierTempons as $panierTempon){
-            $panierTempon->delete();
-        }
-
-        foreach ($paniers as $panier){
-            $newTempon = new PanierTempon();
-            $newTempon->id_user = Auth::user()->id;
-            $newTempon->id_photo = $panier->id_photo;
-            $newTempon->id_photo_panier_last  = $paniers->last()->id;
-            $newTempon->save();
-        }
-        $object = [
-            "count" => count($paniers),
-            "id_tempon" => $paniers->last()->id
-        ];
-
-        return $object ;
+    foreach ($panierTempons as $panierTempon) {
+        $panierTempon->delete();
     }
+
+    if ($paniers->isEmpty()) {
+        return [
+            "count" => 0,
+            "id_tempon" => null
+        ];
+    }
+
+    $lastPanierId = $paniers->last()->id;
+
+    foreach ($paniers as $panier) {
+        $newTempon = new PanierTempon();
+        $newTempon->id_user = Auth::user()->id;
+        $newTempon->id_photo = $panier->id_photo;
+        $newTempon->id_photo_panier_last = $lastPanierId;
+        $newTempon->save();
+    }
+
+    return [
+        "count" => $paniers->count(),
+        "id_tempon" => $lastPanierId
+    ];
+}
 
     public function addPack(Request $request){
         $tab = $request->tab;
         $cle = $request->cle;
         $tabJson = [];
         foreach ($tab as $item){
-            if (strpos($item,$cle)){
-                 $photo = Photo::query()->where('name','=',$item)->first();
+           if (strpos($item, $cle) !== false) {
+                 $photo = Photo::query()->where('name_notbuy','=',$item)->first();
                  $tabJson[] = $photo->id;
             }
 
@@ -456,9 +484,9 @@ $photo = Photo::query()
             $arrayIdPhoto[] = (int)trim($item);
         }
         $photos = Photo::query()->whereIn('id',$arrayIdPhoto)->get();
-        $tarif = count($photos)*2.5;
-        if ($tarif > 25){
-            $tarif = 25;
+        $tarif = count($photos)*4;
+        if ($tarif > 35){
+            $tarif = 35;
         }
         return view('packPhoto')->with(['photos' => $photos, 'tarif' => $tarif, 'pack_id' => $pack->id]);
 

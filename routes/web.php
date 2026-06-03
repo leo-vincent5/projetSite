@@ -103,9 +103,7 @@ Route::get('/legal',[NewController::class,"legal"])->name('legal');
 Route::get('/cgv',[NewController::class,"cgv"])->name('cgv');
 
 Route::get('/galerie',[GalleryController::class,"index"])->name('gallery');
-Route::get('/galerie/{name}',[GalleryController::class,"souscat"])->name('under-galerie');
-Route::get('/galerie/{name}/{club}', [GalleryController::class,"club"])->name("club-view");
-Route::get('/creationweb',[GalleryController::class,"web"])->name('creation-web');
+
 Route::post('/send',[GalleryController::class,"envoi"])->name("envoi");
 Route::post('/envoieForm', [GalleryController::class,"envoieContact"])->name("envoieformulaire");
 Route::post('/projetWeb',[GalleryController::class,"projetweb"])->name('projet-web');
@@ -121,6 +119,9 @@ Route::get('/invite/{token}', [CircleController::class, 'invite'])->name('circle
 
 Route::middleware('auth')->group(function () {
 
+    Route::get('/galerie/{name}',[GalleryController::class,"souscat"])->name('under-galerie');
+    Route::get('/galerie/{name}/{club}', [GalleryController::class,"club"])->name("club-view");
+    Route::get('/creationweb',[GalleryController::class,"web"])->name('creation-web');
     Route::get('/searchSeries', [AudioPlayerController::class, 'search'])->name('series.search');
     Route::get('/aloserie',[AudioPlayerController::class, 'aloserie'])->name('aloserie');
     Route::get('/alofilm',[AudioPlayerController::class, 'alofilm'])->name('alofilm');

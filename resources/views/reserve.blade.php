@@ -118,16 +118,16 @@
                         <span class="font-black text-white">
                             Prix unitaire :
                         </span>
-                        3€ version numérique
+                        5,00 € version numérique
                         <br>
-                        10€ version tirage au format 10:15 (frais de port inclus)
+                        10,00 € version tirage au format 10:15 (frais de port inclus)
                     </div>
 
                     <div class="rounded-2xl bg-white/5 p-5">
                         <span class="font-black text-white">
                             Pack concours :
                         </span>
-                        25€ pour le pack numérique complet d'une même personne
+                        35€ pour le pack numérique complet d'une même personne
                     </div>
 
                 </div>

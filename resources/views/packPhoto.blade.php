@@ -43,8 +43,8 @@
                     </div>
 
                     <div class="mt-3 text-sm leading-6 text-rose-100/70">
-                        2,50 € par photo<br>
-                        Tarif plafonné à 25 € dès 10 photos
+                        4,00 € par photo<br>
+                        Tarif plafonné à 35 € dès 9 photos
                     </div>
                 </div>
 
@@ -76,7 +76,7 @@
 
                     <div class="flex items-center justify-between border-b border-white/10 py-4">
                         <span class="text-rose-100/70">Prix unitaire</span>
-                        <strong>2,50 €</strong>
+                        <strong>4,00 €</strong>
                     </div>
 
                     <div class="flex items-center justify-between pt-4 text-lg">
@@ -115,11 +115,13 @@
                         <div class="group overflow-hidden rounded-[2rem] border border-white/10 bg-[#160910] shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
                             <div class="relative aspect-[4/5] overflow-hidden">
 
-                                <img
-                                    src="/{{ $photo->name_notbuy }}"
-                                    alt="Photo du pack"
-                                    class="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                                >
+                               <img
+    src="/{{ $photo->name_notbuy }}"
+    alt="Photo du pack"
+    loading="lazy"
+    decoding="async"
+    class="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+>
 
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
 
